@@ -1,6 +1,6 @@
-/* matrixfs_esp.c — integracion de MatrixFS Ultra con ESP-IDF (esp_partition).
+/* matrixfs_esp.c — integracion de MatrixFS con ESP-IDF (esp_partition).
  *
- * Copyright 2026 MatrixFS Ultra contributors
+ * Copyright 2026 MatrixFS contributors
  *
  * Licencia Apache, Version 2.0 (la "Licencia");
  * no puede usar este fichero salvo en cumplimiento de la Licencia.
@@ -95,9 +95,7 @@ void mfs_port_wfi(void) { taskYIELD(); }
 
 /* =========================== Utilidades internas ========================= */
 
-static void esp_set_ok(void) {
-  snprintf(s_last_err, sizeof(s_last_err), "ok");
-}
+static void esp_set_ok(void) { snprintf(s_last_err, sizeof(s_last_err), "ok"); }
 
 static mfs_st esp_fail(mfs_st st, const char *msg) {
   snprintf(s_last_err, sizeof(s_last_err), "%s: %s", msg, mfs_ststr(st));
@@ -110,7 +108,8 @@ static mfs_st esp_fail(mfs_st st, const char *msg) {
  * restricciones de alineacion. `addr` llega como direccion absoluta del mapa
  * del MCU (mfs_embedded suma flash->base_addr); se traduce a offset relativo
  * a la particion. */
-static mfs_st esp_flash_read(void *ctx, uint32_t addr, void *dst, uint32_t len) {
+static mfs_st esp_flash_read(void *ctx, uint32_t addr, void *dst,
+                             uint32_t len) {
   esp_mfs_ctx_t *c = (esp_mfs_ctx_t *)ctx;
   if (!c || !c->part)
     return MFS_EINVAL;
@@ -184,9 +183,8 @@ static mfs_st esp_flash_erase(void *ctx, uint32_t addr) {
   esp_mfs_ctx_t *c = (esp_mfs_ctx_t *)ctx;
   if (!c || !c->part)
     return MFS_EINVAL;
-  uint32_t unit =
-      c->part->erase_size ? (uint32_t)c->part->erase_size
-                          : (uint32_t)MFS_ESP_DEFAULT_ERASE_UNIT;
+  uint32_t unit = c->part->erase_size ? (uint32_t)c->part->erase_size
+                                      : (uint32_t)MFS_ESP_DEFAULT_ERASE_UNIT;
   if (addr < c->base)
     return MFS_EINVAL;
   uint32_t off = addr - c->base;
@@ -207,8 +205,8 @@ static mfs_st esp_prepare(const char *label) {
   const esp_partition_t *p = esp_partition_find_first(
       ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, lab);
   if (!p) {
-    snprintf(s_last_err, sizeof(s_last_err),
-             "particion '%s' no encontrada", lab);
+    snprintf(s_last_err, sizeof(s_last_err), "particion '%s' no encontrada",
+             lab);
     return MFS_ENOENT;
   }
 
@@ -218,8 +216,7 @@ static mfs_st esp_prepare(const char *label) {
     snprintf(s_last_err, sizeof(s_last_err),
              "particion '%s' demasiado pequena (%u B): se requieren al menos "
              "%u B",
-             lab, (unsigned)p->size,
-             (unsigned)(MFS_ESP_MIN_SECTORS * unit));
+             lab, (unsigned)p->size, (unsigned)(MFS_ESP_MIN_SECTORS * unit));
     return MFS_EINVAL;
   }
 

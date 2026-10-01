@@ -1,6 +1,6 @@
-/* matrixfs_winfsp.c — front-end WinFsp de MatrixFS Ultra para Windows 10/11.
+/* matrixfs_winfsp.c — front-end WinFsp de MatrixFS para Windows 10/11.
  *
- * Expone un volumen MatrixFS Ultra como una unidad con letra (p.ej. X:) visible
+ * Expone un volumen MatrixFS como una unidad con letra (p.ej. X:) visible
  * en el Explorador de Archivos de Windows, con operaciones nativas completas
  * (copiar, mover, pegar, eliminar, renombrar, cambiar atributos y tamaño).
  *

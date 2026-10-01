@@ -16,7 +16,7 @@ void test_fs_basic(void) {
   CHECK(env_open(&e, RAM_COMPACT, NULL));
   CHECK_EQ(env_format(&e), MFS_OK);
 
-  const char *msg = "MatrixFS Ultra";
+  const char *msg = "MatrixFS";
   mfs_file *f = NULL;
   CHECK_EQ(mf_open(&e.fs, "/a.txt", MFS_O_RDWR | MFS_O_CREAT | MFS_O_TRUNC, &f),
            MFS_OK);

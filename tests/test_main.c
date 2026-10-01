@@ -1,4 +1,4 @@
-/* test_main.c — runner de la suite MatrixFS Ultra (§27) */
+/* test_main.c — runner de la suite MatrixFS (§27) */
 #include "mfs_test.h"
 
 int g_checks = 0;
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
   }
 
   setvbuf(stdout, NULL, _IONBF, 0);
-  printf("MatrixFS Ultra «ATLAS» v1.0 — suite de verificación\n");
+  printf("MatrixFS «ATLAS» v1.0 — suite de verificación\n");
   printf("---------------------------------------------------\n");
 
   /* §27.1 KATs */

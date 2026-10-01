@@ -3,7 +3,7 @@
 Spec: §20 (contrato de puerto), §21 (API), §22 (layout), §5–§6 (detección y
 viabilidad), MFS-ARCH-010 rev. 3.
 
-Este documento describe cómo se integra MatrixFS Ultra en
+Este documento describe cómo se integra MatrixFS en
 microcontroladores y en los ecosistemas de desarrollo más usados. El núcleo no
 tiene dependencias de plataforma: **todo el acoplamiento pasa por el contrato de
 puerto (§20.2) y el driver L2 (§20.3)**, que aporta la integración.

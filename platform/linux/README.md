@@ -1,9 +1,9 @@
-# MatrixFS Ultra «ATLAS» — soporte Linux (FUSE 3)
+# MatrixFS «ATLAS» — soporte Linux (FUSE 3)
 
-Front-end Linux de MatrixFS Ultra. Implementa el sistema de archivos en
+Front-end Linux de MatrixFS. Implementa el sistema de archivos en
 espacio de usuario mediante **libfuse 3**, de modo que no requiere módulos del
 kernel ni parches: *cualquier* kernel con FUSE (5.4+, 6.x y 7.x) puede montar
-volúmenes MatrixFS Ultra.
+volúmenes MatrixFS.
 
 Toda la semántica de sistema de archivos —permisos POSIX persistidos, metadatos,
 E/S con desplazamiento explícito y traducción de errores— vive en la capa
@@ -155,7 +155,7 @@ siempre que el dispositivo esté presente; añada `nofail` si no lo está.
 
 ## 7. Montaje automático por udev/systemd
 
-Al conectar un medio con un volumen MatrixFS Ultra válido, la regla
+Al conectar un medio con un volumen MatrixFS válido, la regla
 `99-matrixfs.rules` sondea el dispositivo (lectura de 512 B) y pide a systemd
 que arranque `matrixfs@<dispositivo>.service`, que lo monta en
 `/run/media/matrixfs/<dispositivo>`.

@@ -5,10 +5,10 @@ Priority: optional
 Architecture: amd64
 Depends: libc6 (>= 2.28), libfuse3-3 (>= 3.9) | libfuse3-4, fuse3
 Recommends: systemd, udev
-Maintainer: MatrixFS Ultra Project <matrixfs@example.invalid>
+Maintainer: MatrixFS Project <matrixfs@example.invalid>
 Homepage: https://example.invalid/matrixfs
-Description: MatrixFS Ultra «ATLAS» — sistema de archivos determinista sobre NVM (FUSE 3)
- MatrixFS Ultra es un sistema de archivos para memoria no volátil (NOR/NAND,
+Description: MatrixFS «ATLAS» — sistema de archivos determinista sobre NVM (FUSE 3)
+ MatrixFS es un sistema de archivos para memoria no volátil (NOR/NAND,
  eMMC, FRAM) diseñado con criterios de determinismo, integridad y mínimo
  consumo de memoria. Este paquete incluye el front-end FUSE 3 para Linux, la
  herramienta de administración matrixfs-ctl, el helper de montaje para

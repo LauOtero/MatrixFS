@@ -1,6 +1,6 @@
 # Integración con RTOS y plataformas de silicio
 
-Guía de adaptación de MatrixFS Ultra a sistemas operativos de tiempo real y a
+Guía de adaptación de MatrixFS a sistemas operativos de tiempo real y a
 los SDK de los principales fabricantes de semiconductores.
 
 Spec: §20.2–§20.3 (contrato de puerto), §13 (RT), MFS-HW-001 (fallback

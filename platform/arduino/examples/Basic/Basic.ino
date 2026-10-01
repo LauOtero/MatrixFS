@@ -1,4 +1,4 @@
-/* Basic.ino — ejemplo mínimo del envoltorio Arduino de MatrixFS Ultra.
+/* Basic.ino — ejemplo mínimo del envoltorio Arduino de MatrixFS.
  *
  * Licencia: Apache-2.0.
  *
@@ -38,7 +38,7 @@ void setup() {
   Serial.print(" size=");
   Serial.println(mfs.partitionSize());
 
-  const char *msg = "Hola desde MatrixFS Ultra";
+  const char *msg = "Hola desde MatrixFS";
   int wr = mfs.writeFile("/hola.txt", msg, strlen(msg));
   if (wr != 0) {
     Serial.print("writeFile fallo: ");
@@ -69,6 +69,4 @@ void setup() {
   mfs.end();
 }
 
-void loop() {
-  /* Nada: el ejemplo es de un solo uso. */
-}
+void loop() { /* Nada: el ejemplo es de un solo uso. */ }

@@ -1,4 +1,4 @@
-# MatrixFS Ultra — Especificación Técnica y Guía de Implementación
+# MatrixFS — Especificación Técnica y Guía de Implementación
 
 ## Edición  1.0 «ATLAS»
 
@@ -68,7 +68,7 @@
 
 ## 1. Resumen ejecutivo
 
-MatrixFS Ultra es un sistema de archivos embebido determinista que opera directamente sobre memoria no volátil controlable por el MCU: **NOR SPI/QSPI/OSPI, NAND raw, ONFI/Toggle, NAND con semántica de zonas (ZNS-like), FRAM, MRAM, EEPROM y SD/eMMC 5.1**, incluidas **combinaciones heterogéneas de dos medios** (NVM byte-addressable + flash de bloques) bajo un único árbol de directorios.
+MatrixFS es un sistema de archivos embebido determinista que opera directamente sobre memoria no volátil controlable por el MCU: **NOR SPI/QSPI/OSPI, NAND raw, ONFI/Toggle, NAND con semántica de zonas (ZNS-like), FRAM, MRAM, EEPROM y SD/eMMC 5.1**, incluidas **combinaciones heterogéneas de dos medios** (NVM byte-addressable + flash de bloques) bajo un único árbol de directorios.
 
 Está dirigido a dispositivos industriales, IoT crítico, automoción, equipamiento médico y registro seguro, donde fiabilidad, vida útil del medio, energía, seguridad y determinismo pesan tanto como el rendimiento.
 
@@ -1152,7 +1152,7 @@ Pipeline obligatorio: `plan → build → check-map → KATs → vFlash (FIH) �
 
 ## 29. Conclusiones
 
-MatrixFS Ultra define, en un único documento normativo, un sistema de archivos embebido cuyo rasgo distintivo es la **conversión de cada promesa en un artefacto auditable**:
+MatrixFS define, en un único documento normativo, un sistema de archivos embebido cuyo rasgo distintivo es la **conversión de cada promesa en un artefacto auditable**:
 
 | Garantía | Artefacto |
 |---|---|

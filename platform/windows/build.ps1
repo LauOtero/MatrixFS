@@ -1,4 +1,4 @@
-# build.ps1 — compila el soporte Windows (WinFsp) de MatrixFS Ultra «ATLAS».
+# build.ps1 — compila el soporte Windows (WinFsp) de MatrixFS «ATLAS».
 #
 # Uso:
 #   .\build.ps1                     # Release x64 (por defecto)
@@ -27,7 +27,7 @@ $distDir = Join-Path $here "dist\$Config"
 
 function Fail($msg) { Write-Error $msg; exit 1 }
 
-Write-Host "== MatrixFS Ultra — build Windows ($Config x64) ==" -ForegroundColor Cyan
+Write-Host "== MatrixFS — build Windows ($Config x64) ==" -ForegroundColor Cyan
 
 # --- 1. Herramientas ---------------------------------------------------------
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {

@@ -1,4 +1,4 @@
-# MatrixFS Ultra «ATLAS» v1.0 — build del soporte Linux (FUSE 3)
+# MatrixFS «ATLAS» v1.0 — build del soporte Linux (FUSE 3)
 #
 # Compila dos binarios:
 #   matrixfs_fuse  front-end FUSE 3 (requiere libfuse3 y sus cabeceras)

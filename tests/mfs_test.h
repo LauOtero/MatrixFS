@@ -1,4 +1,4 @@
-/* mfs_test.h — framework mínimo de pruebas MatrixFS Ultra (§27) */
+/* mfs_test.h — framework mínimo de pruebas MatrixFS (§27) */
 #ifndef MFS_TEST_H
 #define MFS_TEST_H
 

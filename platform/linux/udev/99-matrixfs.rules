@@ -1,7 +1,7 @@
-# 99-matrixfs.rules — detección y automontaje de volúmenes MatrixFS Ultra.
+# 99-matrixfs.rules — detección y automontaje de volúmenes MatrixFS.
 #
 # Al conectar (o arrancar con) un dispositivo de bloque que contenga un volumen
-# MatrixFS Ultra válido, se solicita a systemd que arranque la unidad
+# MatrixFS válido, se solicita a systemd que arranque la unidad
 # matrixfs@<devnode>.service, que a su vez monta el volumen en
 # /run/media/matrixfs/<devnode>.
 #

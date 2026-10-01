@@ -1,7 +1,7 @@
 {
-  "name": "MatrixFS Ultra",
+  "name": "MatrixFS",
   "version": "1.0.0",
-  "description": "Envoltorio Arduino de MatrixFS Ultra: sistema de archivos embebido transaccional, cripto-agile y sin heap, montado sobre una region de flash reservada. Aporta la clase MatrixFS, las primitivas de puerto mfs_port_* y los callbacks de lectura/programacion/borrado. El nucleo MatrixFS se compila aparte.",
+  "description": "Envoltorio Arduino de MatrixFS: sistema de archivos embebido transaccional, cripto-agile y sin heap, montado sobre una region de flash reservada. Aporta la clase MatrixFS, las primitivas de puerto mfs_port_* y los callbacks de lectura/programacion/borrado. El nucleo MatrixFS se compila aparte.",
   "keywords": "filesystem, flash, nor, nand, fram, mram, embedded, esp32, esp8266, rp2040, transaction, no-heap",
   "license": "Apache-2.0",
   "frameworks": "arduino",

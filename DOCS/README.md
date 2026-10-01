@@ -1,7 +1,7 @@
-# MatrixFS Ultra «ATLAS» — Documentación de implementación
+# MatrixFS «ATLAS» — Documentación de implementación
 
 Índice de la documentación por módulo. La referencia normativa es
-`DOCS/MatrixFS Ultra - Technical Specifications and Implementation Guide.md`
+`DOCS/MatrixFS - Technical Specifications and Implementation Guide.md`
 (MFS-SPEC-003 · Edición 1.0 «ATLAS»). Cada documento enlaza las secciones (§)
 que implementa.
 

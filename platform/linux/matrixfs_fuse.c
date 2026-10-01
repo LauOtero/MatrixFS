@@ -1,4 +1,4 @@
-/* matrixfs_fuse.c — front-end FUSE 3 de MatrixFS Ultra para Linux.
+/* matrixfs_fuse.c — front-end FUSE 3 de MatrixFS para Linux.
  *
  * Este fichero es un envoltorio fino sobre el adaptador portable
  * `platform/common/mfs_vfs.c`: toda la semántica de sistema de archivos
@@ -31,8 +31,8 @@
  *                       tamaño del medio para cubrirlo con MFS_ZONE_MAX zonas)
  *   -o allow_other      permite acceso a otros usuarios (ver /etc/fuse.conf)
  *
- * Copyright (c) 2026 MatrixFS Ultra «ATLAS» v1.0
- * Licencia: la del proyecto MatrixFS Ultra.
+ * Copyright (c) 2026 MatrixFS «ATLAS» v1.0
+ * Licencia: la del proyecto MatrixFS.
  */
 #define FUSE_USE_VERSION 34
 

@@ -1,4 +1,4 @@
-# install.ps1 — instala MatrixFS Ultra en Windows y registra el servicio de
+# install.ps1 — instala MatrixFS en Windows y registra el servicio de
 # automontaje.
 #
 # Uso (PowerShell como Administrador):
@@ -33,7 +33,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     Fail "Ejecute este script desde una consola elevada (Administrador)."
 }
 
-Write-Host "== MatrixFS Ultra — instalación ($InstallDir) ==" -ForegroundColor Cyan
+Write-Host "== MatrixFS — instalación ($InstallDir) ==" -ForegroundColor Cyan
 
 # --- 1. Binarios -------------------------------------------------------------
 if (-not (Test-Path $distDir)) {
@@ -74,7 +74,7 @@ if ($existing) {
 }
 Write-Host "  registrando el servicio $service..."
 sc.exe create $service binPath= "`"$exe`"" start= auto DisplayName= "MatrixFS Automount" | Out-Null
-sc.exe description $service "Detecta volúmenes MatrixFS Ultra y los monta en la primera letra libre (D:, E:, ...)." | Out-Null
+sc.exe description $service "Detecta volúmenes MatrixFS y los monta en la primera letra libre (D:, E:, ...)." | Out-Null
 # Reinicio automático ante fallo (5 s / 10 s / 30 s)
 sc.exe failure $service reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
 

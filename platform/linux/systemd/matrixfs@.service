@@ -1,4 +1,4 @@
-# matrixfs@.service — montaje automático de un volumen MatrixFS Ultra (§21).
+# matrixfs@.service — montaje automático de un volumen MatrixFS (§21).
 #
 # Unidad plantilla instanciada por udev (99-matrixfs.rules) con el nombre del
 # nodo de dispositivo en el kernel como instancia:
@@ -14,7 +14,7 @@
 # real de instalación (/usr/local o /usr).
 
 [Unit]
-Description=MatrixFS Ultra volume (/dev/%i)
+Description=MatrixFS volume (/dev/%i)
 Documentation=file:@LIBDIR@/../share/doc/matrixfs/linux-integration.md
 # La unidad vive y muere con el dispositivo: si se extrae el medio, systemd la
 # detiene (KillSignal la desmonta) y no se reintenta.

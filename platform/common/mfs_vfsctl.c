@@ -1,4 +1,4 @@
-/* mfs_vfsctl.c — CLI de validación de MatrixFS Ultra sin kernel.
+/* mfs_vfsctl.c — CLI de validación de MatrixFS sin kernel.
  *
  * Ejercita la misma ruta de código que los front-ends FUSE (Linux) y WinFsp
  * (Windows) — `platform/common/mfs_vfs.c` — sobre una imagen de fichero o un
@@ -50,7 +50,7 @@ typedef struct {
 } cli_opts;
 
 static void usage(void) {
-  printf("mfsctl — CLI de validación MatrixFS Ultra (capa VFS portable)\n"
+  printf("mfsctl — CLI de validación MatrixFS (capa VFS portable)\n"
          "  mfsctl format  <dev> [--label L]\n"
          "  mfsctl probe   <dev> [--kv]   (--kv: salida clave=valor, udev)\n"
          "  mfsctl label   <dev>\n"

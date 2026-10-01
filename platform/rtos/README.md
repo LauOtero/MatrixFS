@@ -1,4 +1,4 @@
-# Puerto RTOS — MatrixFS Ultra
+# Puerto RTOS — MatrixFS
 
 Capa de adaptación del contrato de puerto §20.2 a sistemas operativos de
 tiempo real. El núcleo ya trae adaptadores nativos para los RTOS más usados y

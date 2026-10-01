@@ -1,6 +1,6 @@
-# MatrixFS Ultra «ATLAS» — soporte Windows 10/11 (WinFsp)
+# MatrixFS «ATLAS» — soporte Windows 10/11 (WinFsp)
 
-Front-end Windows de MatrixFS Ultra. Expone un volumen MatrixFS Ultra como una
+Front-end Windows de MatrixFS. Expone un volumen MatrixFS como una
 **unidad con letra** (`X:`) visible en el **Explorador de Archivos**, con
 operaciones nativas completas: copiar, mover, pegar, eliminar, renombrar,
 cambiar atributos y tamaño, crear carpetas, etc.
@@ -152,7 +152,7 @@ El servicio **`MatrixFS-Automount`** se inicia con el sistema y, cada 3 s:
 1. Enumera los volúmenes con `FindFirstVolumeW`/`FindNextVolumeW`.
 2. Sondea cada uno con la capa VFS portable (lectura de los dos superblocks,
    512 B, sin escritura).
-3. Si encuentra un volumen MatrixFS Ultra válido y aún no está montado, le
+3. Si encuentra un volumen MatrixFS válido y aún no está montado, le
    asigna la primera letra de unidad libre desde `D:` y arranca
    `matrixfs_winfsp.exe` para ese volumen.
 4. Libera la letra cuando el volumen desaparece o el proceso termina.
@@ -168,7 +168,7 @@ Stop-Service  MatrixFS-Automount
 # Diagnóstico: mensajes del servicio en DebugView (Sysinternals)
 ```
 
-Con esto, al conectar un medio con un volumen MatrixFS Ultra aparece
+Con esto, al conectar un medio con un volumen MatrixFS aparece
 automáticamente una unidad nueva en «Este equipo».
 
 ### Instalador

@@ -1,8 +1,8 @@
-# MatrixFS Ultra — integración Arduino (ESP32 / ESP8266 / RP2040)
+# MatrixFS — integración Arduino (ESP32 / ESP8266 / RP2040)
 
 Licencia: Apache-2.0.
 
-Este directorio contiene el **envoltorio Arduino** de MatrixFS Ultra: la clase
+Este directorio contiene el **envoltorio Arduino** de MatrixFS: la clase
 C++ `MatrixFS`, las primitivas de puerto `mfs_port_*` y los callbacks de flash.
 Es una fachada fina sobre el núcleo C; **no** es el sistema de archivos.
 

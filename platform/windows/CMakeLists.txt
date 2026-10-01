@@ -1,4 +1,4 @@
-# CMakeLists.txt — build del soporte Windows (WinFsp) de MatrixFS Ultra «ATLAS».
+# CMakeLists.txt — build del soporte Windows (WinFsp) de MatrixFS «ATLAS».
 #
 # Requisitos:
 #   · Visual Studio 2019/2022 (MSVC, x64) o LLVM/clang-cl, y CMake >= 3.20
@@ -21,7 +21,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(MatrixFS_Ultra_Windows
         VERSION 1.0.0
-        DESCRIPTION "MatrixFS Ultra «ATLAS» — soporte Windows (WinFsp)"
+        DESCRIPTION "MatrixFS «ATLAS» — soporte Windows (WinFsp)"
         LANGUAGES C)
 
 if(NOT WIN32)

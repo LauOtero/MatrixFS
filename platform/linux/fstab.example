@@ -1,4 +1,4 @@
-# fstab.example — entradas de ejemplo para /etc/fstab (MatrixFS Ultra).
+# fstab.example — entradas de ejemplo para /etc/fstab (MatrixFS).
 #
 # Se instala como /usr/share/doc/matrixfs/fstab.example y no se copia nunca
 # sobre /etc/fstab: son ejemplos para adaptar.

@@ -1,4 +1,4 @@
-# MatrixFS Ultra «ATLAS» v1.0 — CMake (§26)
+# MatrixFS «ATLAS» v1.0 — CMake (§26)
 cmake_minimum_required(VERSION 3.15)
 project(matrixfs_ultra C)
 

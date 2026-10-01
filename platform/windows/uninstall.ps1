@@ -1,4 +1,4 @@
-# uninstall.ps1 — desinstala MatrixFS Ultra de Windows.
+# uninstall.ps1 — desinstala MatrixFS de Windows.
 #
 # Uso (PowerShell como Administrador):
 #   .\uninstall.ps1
@@ -32,7 +32,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     Fail "Ejecute este script desde una consola elevada (Administrador)."
 }
 
-Write-Host "== MatrixFS Ultra — desinstalación ($InstallDir) ==" -ForegroundColor Cyan
+Write-Host "== MatrixFS — desinstalación ($InstallDir) ==" -ForegroundColor Cyan
 
 # --- 1. Servicio de automontaje ---------------------------------------------
 $existing = Get-Service -Name $service -ErrorAction SilentlyContinue
@@ -84,4 +84,4 @@ if ($machinePath -and $machinePath -like "*$InstallDir*") {
 Write-Host ""
 Write-Host "Desinstalación completada." -ForegroundColor Green
 Write-Host "  Los volúmenes del usuario NO se han modificado: siguen intactos y son"
-Write-Host "  legibles en cualquier otro sistema con MatrixFS Ultra (Linux o Windows)."
+Write-Host "  legibles en cualquier otro sistema con MatrixFS (Linux o Windows)."

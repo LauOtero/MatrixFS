@@ -1,6 +1,6 @@
 /* modmatrixfs.c — Módulo de usuario (usermod) de MicroPython para MatrixFS.
  *
- * Copyright (c) 2026 MatrixFS Ultra contribuidores.
+ * Copyright (c) 2026 MatrixFS contribuidores.
  * Licencia: Apache-2.0 (ver LICENSE en la raíz del repositorio).
  *
  * Este fichero es parte del puerto MicroPython y NO forma parte del núcleo.

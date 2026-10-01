@@ -1,4 +1,4 @@
-/* mfs_port_rtos.c — MatrixFS Ultra «ATLAS» v1.0 — puerto RTOS genérico
+/* mfs_port_rtos.c — MatrixFS «ATLAS» v1.0 — puerto RTOS genérico
  *
  * Forma parte del NÚCLEO. Selecciona, por detección en tiempo de compilación,
  * el adaptador nativo del RTOS huésped y expone las primitivas del contrato

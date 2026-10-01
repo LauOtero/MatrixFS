@@ -1,4 +1,4 @@
-/* mfstool.c — herramienta de build MatrixFS Ultra «ATLAS» (§26)
+/* mfstool.c — herramienta de build MatrixFS «ATLAS» (§26)
  *
  *   mfstool plan                     Genera matrixfs_resources.h + certificado
  * RSC firmado mfstool check-map [mapfile]       MFS-RES-002: ausencia de ruta
@@ -93,7 +93,7 @@ static int cmd_plan(void) {
   /* --- 2. Cuerpo del certificado --- */
   char body[2048];
   int n = snprintf(body, sizeof(body),
-                   "MatrixFS Ultra «ATLAS» v1.0 — certificado RSC\n"
+                   "MatrixFS «ATLAS» v1.0 — certificado RSC\n"
                    "generador: mfstool plan\n"
                    "modos cubiertos: %d\n",
                    (int)MFS_MODE_COUNT);
@@ -581,7 +581,7 @@ static int cmd_profiles(int argc, char **argv) {
  * ===================================================================== */
 static void usage(void) {
   printf(
-      "mfstool — herramienta de build MatrixFS Ultra «ATLAS» (§26)\n"
+      "mfstool — herramienta de build MatrixFS «ATLAS» (§26)\n"
       "  plan                     genera matrixfs_resources.h + RSC firmado\n"
       "  check-map [mapfile]      MFS-RES-002: ausencia de ruta al heap\n"
       "  profiles [--check M B]   perfiles por medio y cota de capacidad\n"

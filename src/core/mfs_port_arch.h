@@ -1,4 +1,4 @@
-/* mfs_port_arch.h — MatrixFS Ultra: capa de puerto del núcleo (8/16/32/64 bits)
+/* mfs_port_arch.h — MatrixFS: capa de puerto del núcleo (8/16/32/64 bits)
  *
  * Forma parte del NÚCLEO (MFS-ARCH-010 rev. 3). Provee las primitivas de
  * puerto del contrato §20.2 (sección crítica, ciclos, tiempo, WFI) con una

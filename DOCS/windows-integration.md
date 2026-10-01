@@ -1,6 +1,6 @@
-# MatrixFS Ultra «ATLAS» — Integración con Windows 10/11 (WinFsp)
+# MatrixFS «ATLAS» — Integración con Windows 10/11 (WinFsp)
 
-Documento oficial de integración de MatrixFS Ultra con Windows. Cubre
+Documento oficial de integración de MatrixFS con Windows. Cubre
 compatibilidad, requisitos de compilación, instalación, configuración,
 asignación de letras de unidad, integración con el Explorador de Archivos,
 resolución de problemas, validación y detalles de implementación.
@@ -14,7 +14,7 @@ resolución de problemas, validación y detalles de implementación.
 ## 1. Modelo de integración
 
 Windows no permite implementar sistemas de archivos en espacio de usuario sin
-un *driver* intermedio. MatrixFS Ultra utiliza **WinFsp** (Windows File System
+un *driver* intermedio. MatrixFS utiliza **WinFsp** (Windows File System
 Proxy), un marco de trabajo de código abierto y ampliamente desplegado que
 actúa de puente entre el gestor de E/S de Windows y un proceso de usuario.
 Gracias a ello **no se requiere ningún driver propio** ni su firma.
@@ -291,7 +291,7 @@ El servicio **`MatrixFS-Automount`** (`matrixfs_automount.exe`) se ejecuta como
 1. Enumera los volúmenes con `FindFirstVolumeW`/`FindNextVolumeW`.
 2. Sondea cada uno con la capa VFS portable (`mfs_vfs_probe`): lectura de los
    dos superblocks, 512 B, sin escritura.
-3. Si detecta un volumen MatrixFS Ultra aún no montado, elige la primera letra
+3. Si detecta un volumen MatrixFS aún no montado, elige la primera letra
    libre desde `D:` y lanza `matrixfs_winfsp.exe <volumen> <letra>:` como
    proceso hijo sin ventana.
 4. Supervisa los procesos hijos; cuando uno termina o el volumen desaparece,
@@ -309,7 +309,7 @@ matrixfs_automount.exe --scan
 # Diagnóstico: mensajes del servicio en DebugView (Sysinternals)
 ```
 
-Con esto, al conectar un medio con un volumen MatrixFS Ultra aparece
+Con esto, al conectar un medio con un volumen MatrixFS aparece
 automáticamente una unidad nueva en «Este equipo», sin intervención del
 usuario.
 

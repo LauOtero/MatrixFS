@@ -1,5 +1,5 @@
 #!/bin/sh
-# matrixfs-probe — sondeo de volumen MatrixFS Ultra para udev.
+# matrixfs-probe — sondeo de volumen MatrixFS para udev.
 #
 # Se instala en <libdir>/matrixfs/matrixfs-probe y lo invoca la regla
 # 99-matrixfs.rules mediante IMPORT{program} al conectar (o arrancar con) un

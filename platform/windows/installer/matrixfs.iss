@@ -1,4 +1,4 @@
-; matrixfs.iss — instalador Inno Setup de MatrixFS Ultra «ATLAS» (Windows).
+; matrixfs.iss — instalador Inno Setup de MatrixFS «ATLAS» (Windows).
 ;
 ; Requisitos:
 ;   · Inno Setup 6 (https://jrsoftware.org/isinfo.php) — `iscc` en el PATH.
@@ -17,9 +17,9 @@
 ; La desinstalación detiene y elimina el servicio y borra los binarios, pero
 ; NO toca NUNCA los volúmenes del usuario: los datos viven en el propio medio.
 
-#define AppName        "MatrixFS Ultra"
+#define AppName        "MatrixFS"
 #define AppVersion     "1.0.0"
-#define AppPublisher   "MatrixFS Ultra Project"
+#define AppPublisher   "MatrixFS Project"
 #define AppURL         "https://example.invalid/matrixfs"
 #define ServiceName    "MatrixFS-Automount"
 #define ServiceDisplay "MatrixFS Automount"
@@ -71,7 +71,7 @@ Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\winfsp.msi"" /qn /norestart"; \
 ; 2. Registro del servicio de automontaje (mismos parámetros que install.ps1).
 Filename: "{sys}\sc.exe"; Parameters: "create {#ServiceName} binPath= ""{app}\matrixfs_automount.exe"" start= auto DisplayName= ""{#ServiceDisplay}"""; \
     Flags: runhidden waituntilterminated
-Filename: "{sys}\sc.exe"; Parameters: "description {#ServiceName} ""Detecta volúmenes MatrixFS Ultra y los monta en la primera letra libre (D:, E:, ...)."""; \
+Filename: "{sys}\sc.exe"; Parameters: "description {#ServiceName} ""Detecta volúmenes MatrixFS y los monta en la primera letra libre (D:, E:, ...)."""; \
     Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "failure {#ServiceName} reset= 86400 actions= restart/5000/restart/10000/restart/30000"; \
     Flags: runhidden waituntilterminated
@@ -108,7 +108,7 @@ begin
   begin
     if not WinFspPresent then
       MsgBox('No se ha detectado WinFsp en este equipo.' + #13#10 + #13#10 +
-             'MatrixFS Ultra lo necesita para montar volúmenes. Instálelo desde ' +
+             'MatrixFS lo necesita para montar volúmenes. Instálelo desde ' +
              'https://winfsp.dev y vuelva a ejecutar el instalador, o coloque ' +
              'winfsp.msi en installer\redist\ antes de generarlo.' + #13#10 + #13#10 +
              'Los binarios se han copiado igualmente: puede instalar WinFsp más ' +

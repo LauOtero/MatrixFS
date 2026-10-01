@@ -1,4 +1,4 @@
-/* mfs_fs.c — núcleo MatrixFS Ultra «ATLAS» v1.0 (§21–§24)
+/* mfs_fs.c — núcleo MatrixFS «ATLAS» v1.0 (§21–§24)
  * Ciclo de vida (FSM de montaje §24.2), POSIX-subset, VIO/DAIO (§13.1),
  * transacciones/savepoints (§9.6), snapshots O(1)/FlashPatch (§10.8),
  * EDP (§12.3), DAB EXP3 (§24.4), CUSUM (§16), HCT (§16) y verificación.

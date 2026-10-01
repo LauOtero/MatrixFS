@@ -1,4 +1,4 @@
-/* MatrixFS.h — envoltorio Arduino (C++) de MatrixFS Ultra «ATLAS».
+/* MatrixFS.h — envoltorio Arduino (C++) de MatrixFS «ATLAS».
  *
  * Licencia: Apache-2.0.
  *

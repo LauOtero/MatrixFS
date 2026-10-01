@@ -1,6 +1,6 @@
-# Kconfig — opciones de configuracion del componente MatrixFS Ultra para ESP-IDF.
+# Kconfig — opciones de configuracion del componente MatrixFS para ESP-IDF.
 #
-# Copyright 2026 MatrixFS Ultra contributors
+# Copyright 2026 MatrixFS contributors
 #
 # Licencia Apache, Version 2.0 (la "Licencia");
 # no puede usar este fichero salvo en cumplimiento de la Licencia.
@@ -13,7 +13,7 @@
 # NI CONDICIONES DE NINGUN TIPO, ni expresas ni implicitas.
 # SPDX-License-Identifier: Apache-2.0
 
-menu "MatrixFS Ultra"
+menu "MatrixFS"
 
     config MATRIXFS_PARTITION_LABEL
         string "Etiqueta de la particion de datos MatrixFS"

@@ -1,6 +1,6 @@
-# CMakeLists.txt — componente externo de ESP-IDF para MatrixFS Ultra «ATLAS».
+# CMakeLists.txt — componente externo de ESP-IDF para MatrixFS «ATLAS».
 #
-# Copyright 2026 MatrixFS Ultra contributors
+# Copyright 2026 MatrixFS contributors
 #
 # Licencia Apache, Version 2.0 (la "Licencia");
 # no puede usar este fichero salvo en cumplimiento de la Licencia.

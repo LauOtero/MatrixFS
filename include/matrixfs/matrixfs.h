@@ -1,4 +1,4 @@
-/* matrixfs.h — MatrixFS Ultra «ATLAS» v1.0 — API pública completa (§21) */
+/* matrixfs.h — MatrixFS «ATLAS» v1.0 — API pública completa (§21) */
 #ifndef MATRIXFS_MATRIXFS_H
 #define MATRIXFS_MATRIXFS_H
 

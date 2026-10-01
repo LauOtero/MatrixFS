@@ -1,6 +1,6 @@
-# MatrixFS Ultra «ATLAS» — componente externo de ESP-IDF
+# MatrixFS «ATLAS» — componente externo de ESP-IDF
 
-Integración de **MatrixFS Ultra** (sistema de archivos embebido en C11, sin heap)
+Integración de **MatrixFS** (sistema de archivos embebido en C11, sin heap)
 como **componente externo de ESP-IDF**. El componente enlaza el núcleo del
 proyecto con el SDK de Espressif (ESP32 / ESP32-S, ESP32-C, ESP32-H) apoyándose
 en la API de particiones `esp_partition`.
@@ -28,7 +28,7 @@ del núcleo (`src/**`) y la capa embebida compartida
 |---|---|
 | `CMakeLists.txt` | Registro del componente (`idf_component_register`): lista todas las fuentes del núcleo, la capa embebida y `matrixfs_esp.c`; expone los include dirs. |
 | `idf_component.yml` | Manifest para el Component Registry (`idf: ">=5.0"`, licencia Apache-2.0). |
-| `Kconfig` | Opciones de `menuconfig` bajo el menú «MatrixFS Ultra». |
+| `Kconfig` | Opciones de `menuconfig` bajo el menú «MatrixFS». |
 | `include/matrixfs_esp.h` | API pública del componente. |
 | `matrixfs_esp.c` | Implementación: puerto, callbacks de flash y montaje. |
 
@@ -66,7 +66,7 @@ del núcleo con `../../src/...` y `../../platform/embedded/`).
 2. Añade el componente a `EXTRA_COMPONENT_DIRS` (si no está ya bajo
    `components/`) o confírmalo con `idf.py reconfigure`.
 
-3. Habilita la opción del menú `MatrixFS Ultra` con `idf.py menuconfig`.
+3. Habilita la opción del menú `MatrixFS` con `idf.py menuconfig`.
 
 ### Opción B — dependencia gestionada (`idf_component.yml`)
 
@@ -143,7 +143,7 @@ matrixfs, data, 0x40,    0x12000, 0x80000,
 
 ## 4. Configuración por Kconfig
 
-Menú `menuconfig` → **MatrixFS Ultra**:
+Menú `menuconfig` → **MatrixFS**:
 
 | Símbolo | Tipo | Defecto | Descripción |
 |---|---|---|---|

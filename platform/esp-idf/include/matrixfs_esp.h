@@ -1,6 +1,6 @@
-/* matrixfs_esp.h — API publica del componente ESP-IDF para MatrixFS Ultra.
+/* matrixfs_esp.h — API publica del componente ESP-IDF para MatrixFS.
  *
- * Copyright 2026 MatrixFS Ultra contributors
+ * Copyright 2026 MatrixFS contributors
  *
  * Licencia Apache, Version 2.0 (la "Licencia");
  * no puede usar este fichero salvo en cumplimiento de la Licencia.

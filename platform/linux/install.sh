@@ -1,5 +1,5 @@
 #!/bin/sh
-# install.sh — compila e instala el soporte Linux (FUSE 3) de MatrixFS Ultra.
+# install.sh — compila e instala el soporte Linux (FUSE 3) de MatrixFS.
 #
 # Uso:
 #   sudo ./install.sh                 # instala en /usr/local (por defecto)

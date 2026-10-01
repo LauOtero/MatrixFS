@@ -1,4 +1,4 @@
-/* mfs_port_rtos.h — MatrixFS Ultra «ATLAS» v1.0 — puerto RTOS genérico
+/* mfs_port_rtos.h — MatrixFS «ATLAS» v1.0 — puerto RTOS genérico
  *
  * Capa de adaptación del núcleo que mapea el contrato de puerto §20.2
  * (sección crítica, ciclos, tiempo, WFI) a las primitivas nativas de un

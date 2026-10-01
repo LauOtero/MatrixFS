@@ -1,7 +1,7 @@
 /* mpconfigport_fragment.h — fragmento de configuración para el usermod
  * MatrixFS de MicroPython.
  *
- * Copyright (c) 2026 MatrixFS Ultra contribuidores.
+ * Copyright (c) 2026 MatrixFS contribuidores.
  * Licencia: Apache-2.0 (ver LICENSE en la raíz del repositorio).
  *
  * USO
@@ -13,7 +13,8 @@
  *
  * El módulo se registra con MP_REGISTER_MODULE(MP_QSTR_matrixfs,
  * mp_module_matrixfs) dentro de modmatrixfs.c, por lo que NO se necesita
- * MICROPY_MODULE_BUILTIN_INIT ni ninguna entrada en MICROPY_PORT_BUILTIN_MODULES.
+ * MICROPY_MODULE_BUILTIN_INIT ni ninguna entrada en
+ * MICROPY_PORT_BUILTIN_MODULES.
  */
 
 #ifndef MICROPY_PY_MATRIXFS

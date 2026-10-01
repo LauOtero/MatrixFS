@@ -1,4 +1,4 @@
-# matrixfs.spec — empaquetado RPM de MatrixFS Ultra «ATLAS» (FUSE 3).
+# matrixfs.spec — empaquetado RPM de MatrixFS «ATLAS» (FUSE 3).
 #
 # El árbol fuente NO se distribuye como tarball: el paquete se compila
 # directamente del árbol de trabajo del proyecto, que se indica con
@@ -33,7 +33,7 @@ Requires:       fuse3-libs
 Recommends:     fuse3
 
 %description
-MatrixFS Ultra es un sistema de archivos para memoria no volátil (NOR, NAND,
+MatrixFS es un sistema de archivos para memoria no volátil (NOR, NAND,
 eMMC, FRAM) diseñado con criterios de determinismo, integridad y mínimo
 consumo de memoria: sin asignación dinámica, con registro de escritura WAL,
 recuperación tras corte de energía y verificación de integridad.
@@ -48,9 +48,9 @@ en Linux es legible y escribible en Windows (WinFsp) y viceversa.
 
 %prep
 # No hay tarball que desempaquetar; se valida que %{_sourcedir} apunte a un
-# árbol MatrixFS Ultra completo.
+# árbol MatrixFS completo.
 test -f %{_sourcedir}/include/matrixfs/matrixfs.h \
-    || { echo "error: defina _sourcedir a la raíz del proyecto MatrixFS Ultra" >&2; exit 1; }
+    || { echo "error: defina _sourcedir a la raíz del proyecto MatrixFS" >&2; exit 1; }
 test -f %{_sourcedir}/platform/linux/Makefile \
     || { echo "error: no se encuentra platform/linux en %{_sourcedir}" >&2; exit 1; }
 
@@ -114,6 +114,6 @@ fi
 %doc %{_docdir}/matrixfs
 
 %changelog
-* Wed Sep 30 2026 MatrixFS Ultra Project <matrixfs@example.invalid> - 1.0.0-1
+* Wed Sep 30 2026 MatrixFS Project <matrixfs@example.invalid> - 1.0.0-1
 - Versión inicial: front-end FUSE 3, matrixfs-ctl, helper de montaje,
   automontaje por udev/systemd y paquete .deb equivalente.

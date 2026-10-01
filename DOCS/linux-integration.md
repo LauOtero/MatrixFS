@@ -1,6 +1,6 @@
-# MatrixFS Ultra «ATLAS» — Integración con Linux (FUSE 3)
+# MatrixFS «ATLAS» — Integración con Linux (FUSE 3)
 
-Documento oficial de integración de MatrixFS Ultra con Linux. Cubre
+Documento oficial de integración de MatrixFS con Linux. Cubre
 compatibilidad, requisitos de compilación, instalación, configuración, montaje
 (manual, `/etc/fstab` y automático), resolución de problemas, validación y
 detalles de implementación.
@@ -13,7 +13,7 @@ detalles de implementación.
 
 ## 1. Modelo de integración
 
-MatrixFS Ultra se implementa en **espacio de usuario** mediante **libfuse 3**.
+MatrixFS se implementa en **espacio de usuario** mediante **libfuse 3**.
 No requiere módulos del kernel, parches ni recompilación: el kernel de Linux
 sólo necesita disponer del soporte FUSE genérico (presente en la línea
 principal desde 2.6.14 y habilitado por defecto en todas las distribuciones

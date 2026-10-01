@@ -1,4 +1,4 @@
-/* mfs_port.h — MatrixFS Ultra «ATLAS» v1.0 — contrato de puerto (§20.2/§20.3)
+/* mfs_port.h — MatrixFS «ATLAS» v1.0 — contrato de puerto (§20.2/§20.3)
  *
  * Todo integrador DEBE implementar las funciones obligatorias. Las opcionales
  * se registran en mfs_config; si faltan, aplica el fallback software con la

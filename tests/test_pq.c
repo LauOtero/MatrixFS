@@ -112,7 +112,7 @@ void test_pq_lms(void) {
 
   static uint8_t sig[8192];
   uint32_t siglen = sizeof(sig);
-  const char *msg = "MatrixFS Ultra ATLAS — secure boot anchor";
+  const char *msg = "MatrixFS ATLAS — secure boot anchor";
   CHECK_EQ(mfs_lms_sign(seed, 3u, (const uint8_t *)msg, (uint32_t)strlen(msg),
                         sig, &siglen),
            MFS_OK);

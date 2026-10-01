@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🟩 MatrixFS Ultra «ATLAS»
+# 🟩 MatrixFS «ATLAS»
 
 **Sistema de archivos embebido determinista, transaccional y cripto-agile para NOR/NAND/FRAM/MRAM/SD-eMMC — desde 512 B de RAM (8, 16, 32 y 64 bits).**
 
@@ -18,9 +18,9 @@
 
 ---
 
-## 📖 ¿Qué es MatrixFS Ultra?
+## 📖 ¿Qué es MatrixFS?
 
-**MatrixFS Ultra** es un sistema de archivos diseñado para dispositivos industriales, IoT crítico, automoción, equipamiento médico y registro seguro, donde **fiabilidad, vida útil del medio, energía, seguridad y determinismo pesan tanto como el rendimiento**. Opera directamente sobre memoria no volátil controlable por el MCU:
+**MatrixFS** es un sistema de archivos diseñado para dispositivos industriales, IoT crítico, automoción, equipamiento médico y registro seguro, donde **fiabilidad, vida útil del medio, energía, seguridad y determinismo pesan tanto como el rendimiento**. Opera directamente sobre memoria no volátil controlable por el MCU:
 
 | Medio | Interfaces | Notas |
 |---|---|---|
@@ -82,7 +82,7 @@ Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** —
 
 ## 🧠 Subsistemas avanzados (detalle)
 
-Además de los 12 pilares, MatrixFS Ultra implementa capacidades avanzadas que
+Además de los 12 pilares, MatrixFS implementa capacidades avanzadas que
 respaldan sus garantías industriales. Se documentan aquí para que el lector
 pueda auditar la superficie real del sistema.
 
@@ -159,7 +159,7 @@ pueda auditar la superficie real del sistema.
 ```
 matrixfs-ultra/
 ├── DOCS/                                  # 📄 Especificación normativa completa (MFS-SPEC-003)
-│   └── MatrixFS Ultra - Technical Specifications and Implementation Guide.md
+│   └── MatrixFS - Technical Specifications and Implementation Guide.md
 ├── include/matrixfs/                      # 🔌 Cabeceras públicas (contrato estable)
 │   ├── mfs_types.h                        #    Tipos, 29 códigos de estado, modos, clases RT y de arquitectura
 │   ├── mfs_port.h                         #    Contrato de puerto §20 (HAL ops, driver L2, HWV)
@@ -578,7 +578,7 @@ no se pueda ejecutar).
 
 ## 📣 Notificar mejoras, errores y desviaciones
 
-El desarrollo de **MatrixFS Ultra** sigue un proceso abierto y trazable. Cualquier mejora propuesta pasa por revisión contra las reglas normativas MFS-* antes de merge.
+El desarrollo de **MatrixFS** sigue un proceso abierto y trazable. Cualquier mejora propuesta pasa por revisión contra las reglas normativas MFS-* antes de merge.
 
 | Tipo | Canal | Plantilla / campos obligatorios |
 |---|---|---|
@@ -596,7 +596,7 @@ El desarrollo de **MatrixFS Ultra** sigue un proceso abierto y trazable. Cualqui
 
 Distribuido bajo **Apache License 2.0** — ver [LICENSE](LICENSE).
 
-**¿Por qué Apache 2.0?** MatrixFS Ultra apunta a producto industrial (automoción, médico, infraestructura crítica). Apache 2.0:
+**¿Por qué Apache 2.0?** MatrixFS apunta a producto industrial (automoción, médico, infraestructura crítica). Apache 2.0:
 
 1. **Permite uso comercial y cierre propietario** — integradores pueden usarlo en firmware de producción sin copyleft, lo que favorece adopción en sectores regulados.
 2. **Otorga licencia de patentes expresa** de cada contribuyente (§3) — esencial dado que la especificación define técnicas susceptibles de patente (GC adaptativo por deuda, contadores termométricos, drenaje EDP multi-nivel, bandit determinista EXP3).
@@ -605,13 +605,13 @@ Distribuido bajo **Apache License 2.0** — ver [LICENSE](LICENSE).
 
 Los documentos de especificación en `DOCS/` comparten la misma licencia. Las marcas «MatrixFS», «ATLAS» y «MFS-Bench» no se conceden con la licencia (§6).
 
-© 2026 The MatrixFS Ultra contributors.
+© 2026 The MatrixFS contributors.
 
 ---
 
 <div align="center">
 
-**MatrixFS Ultra «ATLAS»** — *donde cada promesa es un artefacto auditable.*
+**MatrixFS «ATLAS»** — *donde cada promesa es un artefacto auditable.*
 
 [⬆ Volver arriba](#-matrixfs-ultra-atlas)
 

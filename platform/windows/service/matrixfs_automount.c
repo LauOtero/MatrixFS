@@ -1,6 +1,6 @@
-/* matrixfs_automount.c — servicio de automontaje de MatrixFS Ultra (Windows).
+/* matrixfs_automount.c — servicio de automontaje de MatrixFS (Windows).
  *
- * Detecta los medios que contienen un volumen MatrixFS Ultra y los monta como
+ * Detecta los medios que contienen un volumen MatrixFS y los monta como
  * unidades con letra libre, arrancando un proceso `matrixfs_winfsp.exe` por
  * volumen. El resultado es que, al conectar el medio, la unidad aparece en el
  * Explorador de Archivos de Windows 10/11 sin intervención del usuario.
@@ -36,7 +36,7 @@
 #include "mfs_vfs.h"
 
 #define MFS_SVC_NAME L"MatrixFS-Automount"
-#define MFS_SVC_DISPLAY L"MatrixFS Ultra — Automontaje de volúmenes"
+#define MFS_SVC_DISPLAY L"MatrixFS — Automontaje de volúmenes"
 #define MFS_SCAN_PERIOD_MS 3000u
 #define MFS_MAX_MOUNTS 16u
 

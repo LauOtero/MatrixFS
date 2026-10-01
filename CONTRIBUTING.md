@@ -1,6 +1,6 @@
-# Contribuir a MatrixFS Ultra «ATLAS»
+# Contribuir a MatrixFS «ATLAS»
 
-Gracias por tu interés en mejorar **MatrixFS Ultra**. Al ser un sistema de archivos con pretensiones de uso en sectores regulados (industrial, médico, automoción), el proceso de contribución está diseñado para mantener la **trazabilidad normativa**: toda mejora debe poder auditarse contra la especificación MFS-SPEC-003.
+Gracias por tu interés en mejorar **MatrixFS**. Al ser un sistema de archivos con pretensiones de uso en sectores regulados (industrial, médico, automoción), el proceso de contribución está diseñado para mantener la **trazabilidad normativa**: toda mejora debe poder auditarse contra la especificación MFS-SPEC-003.
 
 ## 📌 Antes de escribir código
 

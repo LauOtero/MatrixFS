@@ -1,4 +1,4 @@
-/* MatrixFS.cpp — envoltorio Arduino (C++) de MatrixFS Ultra «ATLAS».
+/* MatrixFS.cpp — envoltorio Arduino (C++) de MatrixFS «ATLAS».
  *
  * Licencia: Apache-2.0.
  *
@@ -192,9 +192,9 @@ mf_t MatrixFS::_fs;
 
 MatrixFS::MatrixFS(const char *partitionLabel, uint32_t ramTotal,
                    uint32_t sizeBytes, uint32_t baseAddr)
-    : _label(partitionLabel ? partitionLabel : "matrixfs"),
-      _ramTotal(ramTotal), _sizeBytes(sizeBytes), _baseAddr(baseAddr),
-      _mounted(false), _lastError(MFS_OK) {
+    : _label(partitionLabel ? partitionLabel : "matrixfs"), _ramTotal(ramTotal),
+      _sizeBytes(sizeBytes), _baseAddr(baseAddr), _mounted(false),
+      _lastError(MFS_OK) {
   memset(&_flash, 0, sizeof(_flash));
   mfs_embedded_opts_default(&_opts);
 }

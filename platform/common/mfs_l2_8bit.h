@@ -1,4 +1,4 @@
-/* mfs_l2_8bit.h — MatrixFS Ultra 8-bit L2 Drivers (SPI NOR, FRAM, EEPROM,
+/* mfs_l2_8bit.h — MatrixFS 8-bit L2 Drivers (SPI NOR, FRAM, EEPROM,
  * Internal Flash, SD SPI)
  *
  * Drivers L2 optimizados para 8-bit: código compacto, sin malloc, buffers

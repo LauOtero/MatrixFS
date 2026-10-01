@@ -1,4 +1,4 @@
-/* mfs_rtos_port_template.c — Plantilla de portado RTOS para MatrixFS Ultra
+/* mfs_rtos_port_template.c — Plantilla de portado RTOS para MatrixFS
  *
  * Copia este fichero a tu BSP, renómbralo (p. ej. mfs_rtos_port_miRTOS.c) y
  * completa las primitivas del contrato §20.2 con las llamadas nativas de tu
@@ -84,19 +84,13 @@ static void mi_rtos_yield(void) {
 /* 4. Descriptor del adaptador                                         */
 /* ------------------------------------------------------------------ */
 static const mfs_rtos_ops mi_rtos_ops = {
-    mi_rtos_crit_enter,
-    mi_rtos_crit_exit,
-    mi_rtos_cycles,
-    mi_rtos_time_us,
-    mi_rtos_wfi,
-    mi_rtos_yield,
+    mi_rtos_crit_enter, mi_rtos_crit_exit,
+    mi_rtos_cycles,     mi_rtos_time_us,
+    mi_rtos_wfi,        mi_rtos_yield,
     MFS_RTOS_CUSTOM, /* o el id que corresponda si ya está cableado */
-    "Mi RTOS",
-    (uint8_t)(MFS_RTOS_CAP_NESTING | MFS_RTOS_CAP_YIELD)};
+    "Mi RTOS",          (uint8_t)(MFS_RTOS_CAP_NESTING | MFS_RTOS_CAP_YIELD)};
 
 /* ------------------------------------------------------------------ */
 /* 5. Registro: llamar UNA vez antes de mf_init()                      */
 /* ------------------------------------------------------------------ */
-mfs_st mi_rtos_port_setup(void) {
-  return mfs_port_rtos_register(&mi_rtos_ops);
-}
+mfs_st mi_rtos_port_setup(void) { return mfs_port_rtos_register(&mi_rtos_ops); }

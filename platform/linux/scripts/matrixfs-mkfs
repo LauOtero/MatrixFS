@@ -1,5 +1,5 @@
 #!/bin/sh
-# matrixfs-mkfs — crea y formatea un volumen MatrixFS Ultra.
+# matrixfs-mkfs — crea y formatea un volumen MatrixFS.
 #
 # Uso:
 #   matrixfs-mkfs [-L ETIQUETA] [-s TAMANO] [-e ERASE_UNIT] <dispositivo|imagen>

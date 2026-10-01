@@ -1,4 +1,4 @@
-/* mfs_types.h — MatrixFS Ultra «ATLAS» v1.0 — tipos básicos, estados y límites
+/* mfs_types.h — MatrixFS «ATLAS» v1.0 — tipos básicos, estados y límites
  *
  * Referencias normativas:
  *   §3.1  MFS-ARCH-010 rev.3 (clases de arquitectura 8/16/32/64 bits)

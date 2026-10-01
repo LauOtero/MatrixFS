@@ -1,6 +1,6 @@
-# MatrixFS Ultra — módulo de usuario (usermod) para MicroPython
+# MatrixFS — módulo de usuario (usermod) para MicroPython
 
-Integración de referencia de MatrixFS Ultra como **módulo C de usuario
+Integración de referencia de MatrixFS como **módulo C de usuario
 (`USER_C_MODULE`)** de MicroPython. Añade el módulo `matrixfs` con la clase
 `MatrixFS` y la clase `File`, apoyándose en la capa embebida compartida
 (`platform/embedded/mfs_embedded.h`).

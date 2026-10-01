@@ -1,4 +1,4 @@
-# MatrixFS Ultra «ATLAS» v1.0 — Makefile (§26 proceso de build)
+# MatrixFS «ATLAS» v1.0 — Makefile (§26 proceso de build)
 #
 # Objetivos:
 #   make            → librería estática + suite de tests + mfstool

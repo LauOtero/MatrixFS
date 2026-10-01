@@ -1,8 +1,8 @@
-# MatrixFS Ultra — integración PlatformIO
+# MatrixFS — integración PlatformIO
 
 Licencia: Apache-2.0.
 
-Cómo integrar el envoltorio Arduino de MatrixFS Ultra (`platform/arduino`) en un
+Cómo integrar el envoltorio Arduino de MatrixFS (`platform/arduino`) en un
 proyecto PlatformIO. El ejemplo de esta carpeta usa `board = esp32dev`,
 `framework = arduino`.
 

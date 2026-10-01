@@ -1,4 +1,4 @@
-# Changelog — MatrixFS Ultra «ATLAS»
+# Changelog — MatrixFS «ATLAS»
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 

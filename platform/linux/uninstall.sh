@@ -1,5 +1,5 @@
 #!/bin/sh
-# uninstall.sh — desinstala el soporte Linux (FUSE 3) de MatrixFS Ultra.
+# uninstall.sh — desinstala el soporte Linux (FUSE 3) de MatrixFS.
 #
 # Uso:
 #   sudo ./uninstall.sh              # desinstala de /usr/local
