@@ -1,0 +1,17 @@
+{
+  "name": "MatrixFS Ultra",
+  "version": "1.0.0",
+  "description": "Envoltorio Arduino de MatrixFS Ultra: sistema de archivos embebido transaccional, cripto-agile y sin heap, montado sobre una region de flash reservada. Aporta la clase MatrixFS, las primitivas de puerto mfs_port_* y los callbacks de lectura/programacion/borrado. El nucleo MatrixFS se compila aparte.",
+  "keywords": "filesystem, flash, nor, nand, fram, mram, embedded, esp32, esp8266, rp2040, transaction, no-heap",
+  "license": "Apache-2.0",
+  "frameworks": "arduino",
+  "platforms": "espressif32, espressif8266, raspberrypi",
+  "headers": "MatrixFS.h",
+  "build": {
+    "srcFilter": [
+      "+<*.cpp>",
+      "+<*.c>"
+    ]
+  },
+  "_nota": "PlatformIO NO permite incluir ficheros fuera del directorio de la libreria mediante build.srcFilter (el nucleo vive en ../../src, ../../include y ../../platform/embedded). La via recomendada es declarar lib_extra_dirs y aportar el nucleo como una segunda libreria local (copiado o symlink), o usar un layout de proyecto que lo incluya. Vease platform/platformio/README.md. No se inventan flags no documentados."
+}

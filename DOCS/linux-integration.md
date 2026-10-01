@@ -371,7 +371,7 @@ presente, sesión root):
 | Prueba | Comando | Resultado |
 |---|---|---|
 | Compilación estricta de todo el proyecto | `make CFLAGS='-std=c11 -Wall -Wextra -Werror -O2 …' all` | ✅ 0 avisos, 0 errores (`libmatrixfs.a`, `mfs_tests.exe`, `mfstool.exe`, `mfsctl.exe`) |
-| Suite completa del proyecto **en Linux** | `make test` | ✅ **935 checks / 0 fallos** (incluye `test_vfs_portable`, la ruta que usan FUSE y WinFsp) |
+| Suite completa del proyecto **en Linux** | `make test` | ✅ **1 134 checks / 0 fallos** (incluye `test_vfs_portable`, la ruta que usan FUSE y WinFsp) |
 | Ausencia de heap en el núcleo | `make check-map` | ✅ `PASS: sin asignación dinámica en el núcleo (MFS-RES-001/002)` |
 | Compilación del front-end y CLI | `cd platform/linux && make strict` | ✅ `-Werror` limpio enlazando `libfuse3.so.4` real |
 | Instalación real | `sudo make install PREFIX=/usr` | ✅ binarios, `mount.matrixfs`, unidad systemd, regla udev y documentación en su sitio |

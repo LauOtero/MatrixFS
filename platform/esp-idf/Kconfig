@@ -1,0 +1,87 @@
+# Kconfig — opciones de configuracion del componente MatrixFS Ultra para ESP-IDF.
+#
+# Copyright 2026 MatrixFS Ultra contributors
+#
+# Licencia Apache, Version 2.0 (la "Licencia");
+# no puede usar este fichero salvo en cumplimiento de la Licencia.
+# Puede obtener una copia en:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Salvo que la ley aplicable exija lo contrario o se acuerde por escrito, el
+# software distribuido bajo la Licencia se distribuye "TAL CUAL", SIN GARANTIAS
+# NI CONDICIONES DE NINGUN TIPO, ni expresas ni implicitas.
+# SPDX-License-Identifier: Apache-2.0
+
+menu "MatrixFS Ultra"
+
+    config MATRIXFS_PARTITION_LABEL
+        string "Etiqueta de la particion de datos MatrixFS"
+        default "matrixfs"
+        help
+            Campo `label` de la particion (partitions.csv) que MatrixFS usara
+            como medio de almacenamiento. Debe ser una particion de tipo `data`
+            (se busca con ESP_PARTITION_TYPE_DATA y cualquier subtipo).
+
+    config MATRIXFS_RAM_BUDGET
+        int "Presupuesto de RAM asignado a MatrixFS (bytes)"
+        default 32768
+        range 512 1048576
+        help
+            RAM que MatrixFS declara al planificador de viabilidad para elegir
+            el modo operativo. Un valor menor puede degradar el modo (y con el
+            el tamano de chunk y los limites de volumen/fichero).
+
+    config MATRIXFS_FORMAT_IF_NEEDED
+        bool "Formatear automaticamente si el volumen no es valido"
+        default n
+        help
+            Si el volumen no se puede montar (ausente o corrupto), se formatea
+            y se reintenta el montaje una vez. Desactivado por defecto para no
+            destruir datos de forma accidental.
+
+    choice MATRIXFS_FORCE_MODE
+        prompt "Modo operativo del volumen"
+        default MATRIXFS_FORCE_MODE_AUTO
+        help
+            Fuerza el modo operativo en lugar de negociarlo por viabilidad RAM
+            y geometria del medio.
+
+        config MATRIXFS_FORCE_MODE_AUTO
+            bool "Automatico (negociado por viabilidad)"
+
+        config MATRIXFS_FORCE_MODE_ULTRA_NANO
+            bool "Ultra-Nano"
+
+        config MATRIXFS_FORCE_MODE_NANO
+            bool "Nano"
+
+        config MATRIXFS_FORCE_MODE_COMPACT
+            bool "Compact"
+
+        config MATRIXFS_FORCE_MODE_BALANCED
+            bool "Balanced"
+
+        config MATRIXFS_FORCE_MODE_EXTENDED
+            bool "Extended"
+    endchoice
+
+    config MATRIXFS_ENABLE_CRYPTO
+        bool "Habilitar cifrado en reposo (aporta clave de 32 bytes)"
+        default n
+        help
+            Habilita el uso de una clave de 32 bytes para las suites
+            criptograficas del nucleo. Si esta desactivado, no se aporta clave
+            y el volumen se monta sin cifrado.
+
+    config MATRIXFS_CRYPTO_KEY_HEX
+        string "Clave de cifrado (hexadecimal, 64 digitos = 32 bytes)"
+        depends on MATRIXFS_ENABLE_CRYPTO
+        default ""
+        help
+            Clave de 32 bytes codificada en hexadecimal (64 digitos [0-9A-Fa-f]).
+            ADVERTENCIA: este valor queda en texto claro en sdkconfig; para
+            produccion conviene obtenerlo de eFuse o de NVS en tiempo de
+            ejecucion y no de Kconfig.
+
+endmenu

@@ -65,7 +65,7 @@ make mfsctl
 ## Resultado de referencia (host: gcc 14.2 y MSVC 14.51, `-O2`)
 
 ```
-checks: 935   fallos: 0
+checks: 1134   fallos: 0
 
 Estrés: churn GC+WAF OK · 1 000 cortes sin corrupción · tormenta de metadatos OK
         matriz S0–S3 con remontaje OK · agotamiento con errores tipificados
@@ -110,8 +110,8 @@ en cualquier host) y la compilación/ejecución nativa.
 | Elemento | Entorno | Resultado |
 |---|---|---|
 | Semántica del sistema de archivos | `tests/test_vfs.c` + `mfsctl` sobre imagen real | ✅ formato y sondeo, montaje, permisos POSIX (`chmod`/`chown`), metadatos, E/S con desplazamiento, `readdir`, `rename`, truncado, `statfs`/`label`/`verify`, persistencia tras remontar y montaje `ro`; misma ruta que usan FUSE y WinFsp |
-| Todo el proyecto | **Linux** (Debian 13, kernel 6.18, gcc 14.2) con `-std=c11 -Wall -Wextra -Werror` | ✅ 0 avisos; suite **935 / 0** |
-| Todo el proyecto | **Windows** (MSVC 14.51 `/W4`, CMake + Visual Studio) | ✅ 0 avisos; suite **935 / 0** |
+| Todo el proyecto | **Linux** (Debian 13, kernel 6.18, gcc 14.2) con `-std=c11 -Wall -Wextra -Werror` | ✅ 0 avisos; suite **1 134 / 0** |
+| Todo el proyecto | **Windows** (MSVC 14.51 `/W4`, CMake + Visual Studio) | ✅ 0 avisos; suite **1 134 / 0** |
 | **Montaje real en Linux** (FUSE 3, `mount -t matrixfs`) | Debian 13 + **libfuse3 3.17.2** real, root | ✅ **39 OK / 0 fallos**: aparece en `/proc/mounts` como `fuse.matrixfs`, fichero aleatorio de 24 MiB íntegro (`cmp` y md5), `cp`, `truncate` con prefijo intacto, `rename`, borrado, `chmod`/`chown` persistentes, `statfs`, remontaje con md5 idéntico, montaje `ro` (`EROFS`) y enlaces simbólicos rechazados |
 | **Interoperabilidad Linux ↔ Windows** | gcc 14.2 + MSVC 14.51 | ✅ volumen creado en Windows leído en Linux (contenido y `verify=MFS_OK`) y volumen creado en Linux leído en Windows (contenido idéntico, `ls` y `verify=MFS_OK`) |
 | `matrixfs_fuse` (FUSE 3) | Linux + **libfuse3 3.17.2** real | ✅ compila, enlaza (`libfuse3.so.4`) y **monta volúmenes reales** |

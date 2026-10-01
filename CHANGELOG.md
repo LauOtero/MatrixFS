@@ -8,6 +8,18 @@ Las entradas referencian secciones de la especificación normativa **MFS-SPEC-00
 
 ## [Unreleased]
 
+### Añadido — MCU de 8 bits (MFS-ARCH-010 rev. 2) y ecosistemas embebidos
+- 🟪 **Soporte de MCU de 8 bits**: se admite `arch_class = 0` en runtime (8/16/32 bits); sólo se rechaza una clase desconocida (`> 2`) con `MFS_EARCH`. Nuevos modos **8-bit Ultra/Nano/Compact** (512 B / 1 KB / 2 KB) con chunk de 64/128/256 B, elegidos automáticamente por `mfs_select_mode()` cuando `arch_class == 0`.
+  - **`platform/8bit/`**: primitivas de puerto por arquitectura (**AVR, 8051, STM8, PIC16/18, Z80** + genérico) con autodetección por macros; drivers L2 (**NOR SPI, FRAM SPI/I2C, EEPROM SPI/I2C, flash interna, SD-SPI**) con barrera WOB y timeouts acotados; **autodetección de capacidades** del MCU y autoadaptación de `mfs_config`.
+  - **Mínima RAM**: CRC-32C con tabla de *nibble* (64 B en `.rodata` en vez de 1 KiB en `.bss`, mismo resultado bit a bit) y dimensionado condicional de pools/scratch con `MFS_ALLOW_8BIT_TARGET` (`mf_t` ≈ 17 KB → ≈ 1.8 KB; `MFS_SCRATCH_MAX` 4096 → 256 B).
+  - 🐞 **Corregidas** comparaciones de modo que asumían orden monótono (`mode >= MFS_MODE_EXTENDED`, etc.) y que habrían aplicado semántica de 16/32 bits a los modos 8-bit; nuevas funciones de familia `mfs_mode_is_8bit()` / `mfs_mode_classic_ge()`.
+- 🔌 **Integraciones embebidas** (capa común `platform/embedded/` + envoltorios):
+  - **`platform/embedded/`**: driver L2 sobre una región de flash plana y helpers `mfs_embedded_{setup,mount,format}` con formateo opcional.
+  - **`platform/arduino/`**: librería C++ `MatrixFS` (ESP32/ESP8266/RP2040) + ejemplos; **`platform/platformio/`**: proyecto de ejemplo; **`platform/esp-idf/`**: componente externo sobre `esp_partition` con `Kconfig`; **`platform/micropython/`**: usermod con el módulo `matrixfs`.
+- 🛠️ **Build**: `make 8bit` / `-DMATRIXFS_BUILD_8BIT=ON` (CMake) para la capa 8-bit; `mfstool plan` ahora cubre los 8 modos.
+- 📘 **Documentación**: nueva guía [DOCS/embedded-integration.md](DOCS/embedded-integration.md) y actualización de `README.md`, `DOCS/README.md`, `DOCS/hal.md` y `DOCS/testing.md`.
+- ✅ **Verificación**: suite ampliada a **1 134 checks / 0 fallos** (host Windows, gcc 16.1, `-Wall -Wextra`); capa `platform/embedded` validada de extremo a extremo sobre `sim/vflash.c` (formato, montaje, E/S y persistencia tras remontaje). Pendiente: compilación con toolchains/SDK de terceros reales (avr-gcc, sdcc, xc8, Arduino-ESP32, ESP-IDF, MicroPython).
+
 ### Reconstruido — ficheros de soporte y verificación final
 Tras una pérdida accidental del árbol de trabajo, se recompusieron contra sus
 contratos los ficheros de soporte (simuladores, arnés, herramientas, tests,

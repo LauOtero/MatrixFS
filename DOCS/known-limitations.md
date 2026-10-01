@@ -114,7 +114,7 @@ qué **no** está cubierto. Alineado con §26 (lenguaje acotado) y §29.
   libfuse3 3.17.2 real y alcanza ese punto); en Windows, `FspFileSystemCreate`
   devuelve `STATUS_NO_SUCH_DEVICE` sin una sesión elevada con el driver FSD
   accesible. Sí se validan la semántica completa del sistema de archivos (suite
-  `test_vfs` + CLI `matrixfs-ctl`, **935 checks / 0 fallos en Linux y en
+  `test_vfs` + CLI `matrixfs-ctl`, **1 134 checks / 0 fallos en Linux y en
   Windows**) y la compilación estricta de los front-ends (FUSE con `-Werror`
   contra libfuse3 real; WinFsp con MSVC `/W4` contra el SDK real). Véase
   [`testing.md`](testing.md).

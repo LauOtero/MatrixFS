@@ -1,0 +1,34 @@
+# idf_component.yml — manifest del componente para el Component Registry.
+#
+# Copyright 2026 MatrixFS Ultra contributors
+#
+# Licencia Apache, Version 2.0 (la "Licencia");
+# no puede usar este fichero salvo en cumplimiento de la Licencia.
+# Puede obtener una copia en:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Salvo que la ley aplicable exija lo contrario o se acuerde por escrito, el
+# software distribuido bajo la Licencia se distribuye "TAL CUAL", SIN GARANTIAS
+# NI CONDICIONES DE NINGUN TIPO, ni expresas ni implicitas.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Este manifest permite consumir el componente desde el Component Registry de
+# Espressif o como dependencia directa de un proyecto ESP-IDF.
+
+version: "1.0.0"
+description: >-
+  Integracion de MatrixFS Ultra «ATLAS», sistema de archivos embebido en C11 y
+  sin heap, como componente externo de ESP-IDF. Aporta el puerto (secciones
+  criticas, tiempo y WFI) y los callbacks de flash sobre esp_partition.
+url: "https://github.com/LauOtero/MatrixFS-ULTRA"
+repository: "https://github.com/LauOtero/MatrixFS-ULTRA"
+documentation: "https://github.com/LauOtero/MatrixFS-ULTRA/tree/main/platform/esp-idf"
+license: "Apache-2.0"
+tags:
+  - filesystem
+  - storage
+  - embedded
+
+dependencies:
+  idf: ">=5.0"
