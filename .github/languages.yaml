@@ -1,0 +1,27 @@
+# Configuración de traducción automática del README en GitHub
+# Funcionalidad: GitHub "README translations" (auto-translation)
+# Especificación oficial del formato:
+#   https://github.com/readme-translations/translation-config
+#
+# Reglas del formato:
+#   - `default:` define el idioma ORIGINAL del README.md de la raíz del repo.
+#   - `languages:` lista, EN ORDEN DE PRIORIDAD, los idiomas que aparecerán
+#     en el selector de idiomas del README (incluyendo el idioma fuente).
+#   - Los códigos usan la norma IETF BCP 47 (subtags ISO 639-1 + región).
+#   - El archivo debe vivir en `.github/languages.yaml` (o languages.yml).
+#
+# Idioma predeterminado del proyecto: español (es).
+
+default: es
+
+languages:
+  - es        # Español — idioma principal y predeterminado del proyecto
+  - en        # Inglés — máxima cobertura en ecosistemas embebidos / IoT
+  - zh-CN     # Chino simplificado — gran base de usuarios ESP32 / Arduino
+  - de        # Alemán — industria de automoción e infraestructura crítica
+  - ja        # Japonés — equipamiento médico y robótica
+  - fr        # Francés — sector industrial europeo
+  - pt-BR     # Portugués (Brasil) — comunidad maker e IoT en América
+  - ru        # Ruso — comunidad de sistemas empotrados
+  - ko        # Coreano — electrónica de consumo e industrial
+  - it        # Italiano — automatización y manufactura
