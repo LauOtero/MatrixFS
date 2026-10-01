@@ -16,9 +16,7 @@
 ![Arch: 8/16/32/64-bit][badge-arch]
 [![Tests: 1232 passing][badge-tests]]()
 
-[🇺🇸 English](README.md) · [🇪🇸 Español](README.es.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇨🇳 中文](README.zh-CN.md) · [🇯🇵 日本語](README.ja.md) · [🇧🇷 Português](README.pt-BR.md) · [🇷🇺 Русский](README.ru.md) · [🇰🇷 한국어](README.ko.md) · [🇮🇹 Italiano](README.it.md)
-
-*This README is written in **English** (base language) in [`README.md`](README.md); the header language selector links to the other language versions generated automatically with **GitHub Actions** on every change. Language configuration in [`.github/languages.yaml`](.github/languages.yaml).*
+[🇪🇸 Español](README.es.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇨🇳 中文](README.zh-CN.md) · [🇯🇵 日本語](README.ja.md) · [🇧🇷 Português](README.pt-BR.md) · [🇷🇺 Русский](README.ru.md) · [🇰🇷 한국어](README.ko.md) · [🇮🇹 Italiano](README.it.md)
 
 </div>
 
