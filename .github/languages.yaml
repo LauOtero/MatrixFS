@@ -1,22 +1,23 @@
-# Idiomas del README de MatrixFS y traducción automática.
+# Idiomas del README de MatrixFS.
 #
 # IMPORTANTE: GitHub NO ofrece una función nativa de traducción de READMEs.
 # La traducción la realiza el workflow .github/workflows/translate-readme.yml,
-# que lee este archivo como ÚNICA fuente de verdad en cada push.
+# que lee este archivo como ÚNICA fuente de verdad.
 #
 # Reglas:
-#   - `default:` es el idioma ORIGINAL del README.md de la raíz (fuente).
-#   - `languages:` lista, EN ORDEN DE PRIORIDAD, todos los idiomas del selector.
-#   - Los códigos usan la norma IETF BCP 47 (subtags ISO 639-1 + región).
-#   - Cada idioma distinto de `default` se traduce a README.<código>.md.
-#
-# Idioma predeterminado del proyecto: español (es).
+#   - `source_file`:     archivo base (inglés) que se redacta a mano.
+#   - `source_language`: código del idioma base.
+#   - `languages`:       lista, EN ORDEN DE PRIORIDAD, de todos los idiomas.
+#   - Salida: cada idioma distinto del base se escribe en README.<código>.md.
+#     El idioma base es README.md y no se regenera.
+#   - Los códigos usan la norma IETF BCP 47 (ISO 639-1 + región).
 
-default: es
+source_file: README.md
+source_language: en
 
 languages:
-  - es        # Español — idioma principal y predeterminado del proyecto
-  - en        # Inglés — máxima cobertura en ecosistemas embebidos / IoT
+  - en        # Inglés — idioma base (README.md)
+  - es        # Español — comunidad hispanohablante
   - zh-CN     # Chino simplificado — gran base de usuarios ESP32 / Arduino
   - de        # Alemán — industria de automoción e infraestructura crítica
   - ja        # Japonés — equipamiento médico y robótica

@@ -1,197 +1,190 @@
-<!--
-Este README se sirve en español como idioma predeterminado y fuente.
-La traducción automática se realiza con GitHub Actions
-(.github/workflows/translate-readme.yml), que usa .github/languages.yaml como
-configuración de idiomas — default: es | en, zh-CN, de, ja, fr, pt-BR, ru, ko, it.
--->
-
 <div align="center">
 
 # 🟩 MatrixFS «ATLAS»
 
-### *Sistema de archivos embebido determinista, transaccional y cripto-agile*
+### *Deterministic, transactional and crypto-agile embedded file system*
 
-**NOR / NAND / FRAM / MRAM / SD-eMMC — desde 512 B de RAM (8, 16, 32 y 64 bits)**
+**NOR / NAND / FRAM / MRAM / SD-eMMC — from 512 B of RAM (8, 16, 32 and 64-bit)**
 
-*Implementación de la especificación técnica MFS-SPEC-003 Edición 1.0 «ATLAS»*
+*Implementation of the MFS-SPEC-003 Edition 1.0 «ATLAS» technical specification*
 
 [![License: Apache 2.0][badge-license]](LICENSE)
 [![C Standard: C11][badge-c11]](https://en.cppreference.com/w/c/11)
-[![Heap: ZERO][badge-heap]](#-garantías-normativas)
+[![Heap: ZERO][badge-heap]](#-normative-guarantees)
 ![MISRA C:2012-oriented][badge-misra]
-[![Status: Fases 1–7 implementadas][badge-status]](#-roadmap-y-estado)
+[![Status: Phases 1–7 implemented][badge-status]](#-roadmap-and-status)
 ![Arch: 8/16/32/64-bit][badge-arch]
 [![Tests: 1232 passing][badge-tests]]()
 
-[🇪🇸 Español](README.md) · [🇺🇸 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇨🇳 中文](README.zh-CN.md) · [🇯🇵 日本語](README.ja.md) · [🇧🇷 Português](README.pt-BR.md) · [🇷🇺 Русский](README.ru.md) · [🇰🇷 한국어](README.ko.md) · [🇮🇹 Italiano](README.it.md)
+[🇺🇸 English](README.md) · [🇪🇸 Español](README.es.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇨🇳 中文](README.zh-CN.md) · [🇯🇵 日本語](README.ja.md) · [🇧🇷 Português](README.pt-BR.md) · [🇷🇺 Русский](README.ru.md) · [🇰🇷 한국어](README.ko.md) · [🇮🇹 Italiano](README.it.md)
 
-*Este README se traduce automáticamente con **GitHub Actions**: el idioma fuente es el **español** y las demás versiones se generan en cada cambio mediante [`.github/workflows/translate-readme.yml`](.github/workflows/translate-readme.yml). Configuración de idiomas en [`.github/languages.yaml`](.github/languages.yaml).*
+*This README is written in **English** (base language) in [`README.md`](README.md); the header language selector links to the other language versions generated automatically with **GitHub Actions** on every change. Language configuration in [`.github/languages.yaml`](.github/languages.yaml).*
 
 </div>
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [📖 ¿Qué es MatrixFS?](#-qué-es-matrixfs)
-- [✨ Características principales (los 12 pilares)](#-características-principales-los-12-pilares)
-- [🧠 Subsistemas avanzados (detalle)](#-subsistemas-avanzados-detalle)
-- [🏗️ Arquitectura del repositorio](#-arquitectura-del-repositorio)
-- [🚀 Inicio rápido](#-inicio-rápido)
-- [🔒 Garantías normativas](#-garantías-normativas)
-- [🧪 Verificación (§27)](#-verificación-27)
-- [📊 Resultados de rendimiento extremo (MFS-Bench §17)](#-resultados-de-rendimiento-extremo-mfs-bench-17)
-- [🛠️ Herramientas](#-herramientas)
-- [🖥️ Plataformas y ecosistemas soportados](#-plataformas-y-ecosistemas-soportados)
-- [🗺️ Roadmap y estado](#-roadmap-y-estado)
-- [🌐 Multiidioma](#-multiidioma)
-- [📚 Documentación](#-documentación)
-- [📣 Notificar mejoras, errores y desviaciones](#-notificar-mejoras-errores-y-desviaciones)
-- [⚖️ Licencia](#-licencia)
+- [📖 What is MatrixFS?](#-what-is-matrixfs)
+- [✨ Key features (the 12 pillars)](#-key-features-the-12-pillars)
+- [🧠 Advanced subsystems (detail)](#-advanced-subsystems-detail)
+- [🏗️ Repository architecture](#-repository-architecture)
+- [🚀 Quick start](#-quick-start)
+- [🔒 Normative guarantees](#-normative-guarantees)
+- [🧪 Verification (§27)](#-verification-27)
+- [📊 Extreme performance results (MFS-Bench §17)](#-extreme-performance-results-mfs-bench-17)
+- [🛠️ Tools](#-tools)
+- [🖥️ Supported platforms and ecosystems](#-supported-platforms-and-ecosystems)
+- [🗺️ Roadmap and status](#-roadmap-and-status)
+- [🌐 Multilingual](#-multilingual)
+- [📚 Documentation](#-documentation)
+- [📣 Report improvements, bugs and deviations](#-report-improvements-bugs-and-deviations)
+- [⚖️ License](#-license)
 
 ---
 
-## 📖 ¿Qué es MatrixFS?
+## 📖 What is MatrixFS?
 
 > [!IMPORTANT]
-> **MatrixFS** es un sistema de archivos diseñado para dispositivos industriales, IoT crítico, automoción, equipamiento médico y registro seguro, donde **fiabilidad, vida útil del medio, energía, seguridad y determinismo pesan tanto como el rendimiento**. Opera directamente sobre memoria no volátil controlable por el MCU:
+> **MatrixFS** is a file system designed for industrial devices, critical IoT, automotive, medical equipment and secure logging, where **reliability, media lifespan, energy, security and determinism weigh as much as performance**. It operates directly on non-volatile memory controllable by the MCU:
 
-| Medio | Interfaces | Notas |
+| Media | Interfaces | Notes |
 |:---|:---|:---|
-| **NOR SPI/QSPI/OSPI** | XIP opcional | Byte-addressable, WEP por entropía |
-| **NAND raw / ONFI / Toggle** | Bus de datos 8/16 | Semántica de zonas ZNS-like opcional |
-| **FRAM / MRAM / EEPROM** | I²C/SPI | Sin borrado por bloque, E2G simplificado |
-| **SD / eMMC 5.1** | CMD/DAT, CQE | Bad-block table, DMA alineado |
-| **UFS 3.1/4.0** | UniPro / UFSHCI | JEDEC JESD220; motor MANAGED, TRIM/UNMAP |
-| **SSD NVMe / SATA** | PCIe / AHCI | Motor MANAGED; `deallocate`/`unmap` (DSM) |
-| **Dual-medio heterogéneo** | NVM + flash de bloques | Un único árbol de directorios (HMT) |
+| **NOR SPI/QSPI/OSPI** | XIP optional | Byte-addressable, WEP by entropy |
+| **NAND raw / ONFI / Toggle** | 8/16 data bus | Optional ZNS-like zone semantics |
+| **FRAM / MRAM / EEPROM** | I²C/SPI | No block erase, simplified E2G |
+| **SD / eMMC 5.1** | CMD/DAT, CQE | Bad-block table, aligned DMA |
+| **UFS 3.1/4.0** | UniPro / UFSHCI | JEDEC JESD220; MANAGED engine, TRIM/UNMAP |
+| **NVMe / SATA SSD** | PCIe / AHCI | MANAGED engine; `deallocate`/`unmap` (DSM) |
+| **Heterogeneous dual-media** | NVM + block flash | A single directory tree (HMT) |
 
 > [!NOTE]
-> Para las unidades **gestionadas** (SD/eMMC/UFS/USB/NVMe/SATA) el mapeo físico,
-> el *wear leveling*, el *bad block management* y el ECC los resuelve el propio
-> dispositivo; MatrixFS asigna por clúster y **no duplica** su FTL. Para los
-> medios **RAW** (NOR/NAND/FRAM/MRAM/EEPROM) el FTL es del núcleo. Detalle en
+> For **managed** drives (SD/eMMC/UFS/USB/NVMe/SATA) the physical mapping,
+> *wear leveling*, *bad block management* and ECC are resolved by the device
+> itself; MatrixFS allocates per cluster and **does not duplicate** its FTL. For
+> **RAW** media (NOR/NAND/FRAM/MRAM/EEPROM) the FTL belongs to the core. Details in
 > [💾 DOCS/storage-integration.md](DOCS/storage-integration.md).
 
-Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** — sin heap dinámico certificado en build-time, viabilidad honesta (`MFS_ENOTVIABLE`/`MFS_EARCH` en lugar de degradación silenciosa), y recuperación verificada ante cortes de energía.
+Its distinctive trait: **every promise becomes an auditable artifact** — with no dynamic heap certified at build-time, honest viability (`MFS_ENOTVIABLE`/`MFS_EARCH` instead of silent degradation), and verified recovery after power cuts.
 
 > [!TIP]
-> ✅ **Soporte de 8, 16, 32 y 64 bits** — regla normativa **MFS-ARCH-010 rev. 3**, con **autodetección y autoconfiguración**. El núcleo clasifica el objetivo (declarado o `MFS_ARCH_AUTO`), **detecta las capacidades de aceleración por hardware** (CRC-32C por instrucción, AES/SHA/CLMUL/SIMD/RNG/CAS) y adapta la clase, el presupuesto de RAM y la suite. Los MCU de 8 bits (AVR, 8051, STM8, PIC16/18, Z80) usan los modos **8-bit** (≤ 2 KB de RAM, sin AEAD, CRC-32C con tabla de *nibble*); los objetivos de 16/32/64 bits usan la familia clásica (Ultra-Nano … Extended). Sólo se rechaza (`MFS_EARCH`) una clase de arquitectura desconocida (`arch_class > 3`).
+> ✅ **Support for 8, 16, 32 and 64-bit** — normative rule **MFS-ARCH-010 rev. 3**, with **autodetection and autoconfiguration**. The core classifies the target (declared or `MFS_ARCH_AUTO`), **detects the hardware acceleration capabilities** (CRC-32C by instruction, AES/SHA/CLMUL/SIMD/RNG/CAS) and adapts the class, the RAM budget and the suite. 8-bit MCUs (AVR, 8051, STM8, PIC16/18, Z80) use the **8-bit** modes (≤ 2 KB of RAM, no AEAD, CRC-32C with *nibble* table); 16/32/64-bit targets use the classic family (Ultra-Nano … Extended). Only an unknown architecture class (`arch_class > 3`) is rejected (`MFS_EARCH`).
 
 ---
 
-## ✨ Características principales (los 12 pilares)
+## ✨ Key features (the 12 pillars)
 
-| # | Pilar | Implementación |
+| # | Pillar | Implementation |
 |:--|:---|:---|
-| 1 | **Autoconfiguración segura** | Cascada HAL §5.1 (JEDEC/SFDP/CFI/assets), **detección de arquitectura y aceleradores HW** (MFS-ARCH-010 rev.3), HWV de 64 B persistido @LBA 512 con CRC-32C |
-| 2 | **Memoria estática certificada** | Contratos RSC §7, pools estáticos, overlay por modo, cero `malloc()` (MFS-RES-001) |
-| 3 | **Viabilidad honesta** | Análisis firmware+stack+perif+margen ≥10 % (§6.1); rechazo explícito sin arranque |
-| 4 | **Transaccionalidad WAL+ v3** | Tokens A/B con contador termométrico TFC, checkpoint con raíz BLAKE3, replay acotado por cota BMT (§9) |
-| 5 | **Pipeline CCD v2** | Dedup CFX (cuckoo) + CDC Gear, compresión LZ4/FSST-lite, suites S0–S3 (§10) |
-| 6 | **FTL Ultra 2** | ZLF log-structured, L2P, AGCB+ sobre deuda GLD, E2G E2E, WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP RS(16,15) (§8.2, §8.5, §11) |
-| 7 | **Resiliencia energética** | EDP drenaje 5 niveles, DAB bandit determinista EXP3, presupuesto ELD (§12.3, §24.4, §13.3) |
-| 8 | **Tiempo real** | DAIO v2 con deadlines, clases RT-A/B/C, TCB-DA, p99.9 ≤ 3 ms RT-A (§13) |
-| 9 | **Seguridad industrial** | Crypto-agility S0→S3, HKDF-SHA256, PUF (fuzzy extractor) y ancla post-cuántica hash-based LMS (SP 800-208), cero secretos en reposo (§15) |
-| 10 | **Observabilidad HCT v2** | Telemetría de salud exportable CBOR+COSE, KPIs ligados a MFS-Bench v2 (§16, §17) |
-| 11 | **Ciclo de vida** | Snapshots O(1) MFS-Snap, parche OTA atómico FPT con revert instantáneo (§10.8) |
-| 12 | **Determinismo verificable** | Presupuestos desde `T_max`, autómatas model-checked, WCET por stack-painting (§24) |
+| 1 | **Secure autoconfiguration** | HAL cascade §5.1 (JEDEC/SFDP/CFI/assets), **architecture and HW accelerator detection** (MFS-ARCH-010 rev.3), HWV of 64 B persisted @LBA 512 with CRC-32C |
+| 2 | **Certified static memory** | RSC contracts §7, static pools, per-mode overlay, zero `malloc()` (MFS-RES-001) |
+| 3 | **Honest viability** | Firmware+stack+periph+margin ≥10 % analysis (§6.1); explicit rejection without boot |
+| 4 | **WAL+ v3 transactionality** | A/B tokens with thermometric counter TFC, checkpoint with BLAKE3 root, replay bounded by BMT bound (§9) |
+| 5 | **CCD v2 pipeline** | CFX (cuckoo) dedup + CDC Gear, LZ4/FSST-lite compression, S0–S3 suites (§10) |
+| 6 | **FTL Ultra 2** | Log-structured ZLF, L2P, AGCB+ on GLD debt, E2E E2G, WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP RS(16,15) (§8.2, §8.5, §11) |
+| 7 | **Energy resilience** | EDP 5-level draining, deterministic DAB bandit EXP3, ELD budget (§12.3, §24.4, §13.3) |
+| 8 | **Real time** | DAIO v2 with deadlines, RT-A/B/C classes, TCB-DA, p99.9 ≤ 3 ms RT-A (§13) |
+| 9 | **Industrial security** | Crypto-agility S0→S3, HKDF-SHA256, PUF (fuzzy extractor) and hash-based post-quantum anchor LMS (SP 800-208), zero secrets at rest (§15) |
+| 10 | **HCT v2 observability** | Exportable health telemetry CBOR+COSE, KPIs tied to MFS-Bench v2 (§16, §17) |
+| 11 | **Lifecycle** | MFS-Snap O(1) snapshots, atomic FPT OTA patch with instant revert (§10.8) |
+| 12 | **Verifiable determinism** | Budgets from `T_max`, model-checked automata, WCET by stack-painting (§24) |
 
-### 🎛️ Modos operativos y límites normativos (§18.2)
+### 🎛️ Operating modes and normative limits (§18.2)
 
-| Modo | RAM mínima | Stack | Chunk | Escenario |
+| Mode | Minimum RAM | Stack | Chunk | Scenario |
 |:---|---:|---:|---:|:---|
-| **8-bit Ultra** | 512 B | 32 B | 64 B | AVR/8051/STM8/PIC: sólo metadatos + CRC |
-| **8-bit Nano** | 1 KB | 48 B | 128 B | MCU 8-bit con integridad (CRC-32C) |
-| **8-bit Compact** | 2 KB | 64 B | 256 B | MCU 8-bit con más ficheros/snapshots |
-| **Ultra-Nano** | 720 B | 64 B | 128 B | MCUs 16/32-bit 8 KB (STM32F0/F1, MSP430FR) |
-| **Nano** | 1.5 KB | 96 B | 256 B | MCUs 16/32-bit 8–16 KB |
-| **Compact** | 3.5 KB | 256 B | 512 B | MCUs 16/32-bit 16–20 KB |
-| **Balanced** | 11.5 KB | 512 B | 4096 B | MCUs 16/32-bit 64 KB+ |
-| **Extended** | 21.5 KB | 1 KB | 4096 B | 16/32/64-bit: dual-medio, PQ, ML certificable |
+| **8-bit Ultra** | 512 B | 32 B | 64 B | AVR/8051/STM8/PIC: metadata + CRC only |
+| **8-bit Nano** | 1 KB | 48 B | 128 B | 8-bit MCU with integrity (CRC-32C) |
+| **8-bit Compact** | 2 KB | 64 B | 256 B | 8-bit MCU with more files/snapshots |
+| **Ultra-Nano** | 720 B | 64 B | 128 B | 16/32-bit MCUs 8 KB (STM32F0/F1, MSP430FR) |
+| **Nano** | 1.5 KB | 96 B | 256 B | 16/32-bit MCUs 8–16 KB |
+| **Compact** | 3.5 KB | 256 B | 512 B | 16/32-bit MCUs 16–20 KB |
+| **Balanced** | 11.5 KB | 512 B | 4096 B | 16/32-bit MCUs 64 KB+ |
+| **Extended** | 21.5 KB | 1 KB | 4096 B | 16/32/64-bit: dual-media, PQ, certifiable ML |
 
 > [!NOTE]
-> Los modos **8-bit** forman una familia independiente; el selector los elige
-> automáticamente cuando `arch_class == 0`. No se comparan por orden con los
-> modos clásicos (ver `mfs_mode_is_8bit()` en la cabecera pública).
+> The **8-bit** modes form an independent family; the selector picks them
+> automatically when `arch_class == 0`. They are not compared in order with the
+> classic modes (see `mfs_mode_is_8bit()` in the public header).
 
 ---
 
-## 🧠 Subsistemas avanzados (detalle)
+## 🧠 Advanced subsystems (detail)
 
-Además de los 12 pilares, MatrixFS implementa capacidades avanzadas que
-respaldan sus garantías industriales. Se documentan aquí para que el lector
-pueda auditar la superficie real del sistema.
+In addition to the 12 pillars, MatrixFS implements advanced capabilities that
+support its industrial guarantees. They are documented here so that the reader
+can audit the real surface of the system.
 
-### 🧩 Arquitecturas y aceleración por hardware (MFS-ARCH-010 rev. 3)
-- **Clases de 8/16/32/64 bits** con un único modelo en el núcleo
-  (`src/core/mfs_arch.c`) y autodetección (`MFS_ARCH_AUTO`) o declaración
-  explícita en `mfs_config.arch_class`.
-- **Puerto del núcleo** por arquitectura (`src/core/mfs_port_arch.c`): AVR, 8051,
-  STM8, PIC16/18, Z80 y *fallback* C genérico (16/32/64 bits).
-- **Detección de aceleradores** (`MFS_HWACCEL_*`): CRC-32C por instrucción, AES,
-  SHA-256, CLMUL, SIMD, RNG y CAS atómicos; macros del compilador + refinado en
-  runtime (`__builtin_cpu_supports`/CPUID).
-- **Aceleración efectiva**: el CRC-32C usa la instrucción CRC32 (x86 SSE4.2 /
-  ARMv8 CRC32) cuando existe, con resultado idéntico a la tabla software.
-- **Honestidad de capacidades** (MFS-HW-001): el HWV sólo declara lo que el
-  núcleo puede *ejecutar*; el resto se reporta como diagnóstico.
-- **Modos de RAM mínima** para 8 bits (Ultra/Nano/Compact) y dimensionado
-  condicional de pools y *scratch* con `MFS_ALLOW_8BIT_TARGET`.
+### 🧩 Architectures and hardware acceleration (MFS-ARCH-010 rev. 3)
+- **8/16/32/64-bit classes** with a single model in the core
+  (`src/core/mfs_arch.c`) and autodetection (`MFS_ARCH_AUTO`) or explicit
+  declaration in `mfs_config.arch_class`.
+- **Core port** per architecture (`src/core/mfs_port_arch.c`): AVR, 8051,
+  STM8, PIC16/18, Z80 and a generic C *fallback* (16/32/64-bit).
+- **Accelerator detection** (`MFS_HWACCEL_*`): CRC-32C by instruction, AES,
+  SHA-256, CLMUL, SIMD, RNG and atomic CAS; compiler macros + runtime
+  refinement (`__builtin_cpu_supports`/CPUID).
+- **Effective acceleration**: CRC-32C uses the CRC32 instruction (x86 SSE4.2 /
+  ARMv8 CRC32) when it exists, with a result identical to the software table.
+- **Capability honesty** (MFS-HW-001): the HWV only declares what the core can
+  *execute*; the rest is reported as diagnostics.
+- **Minimum RAM modes** for 8 bits (Ultra/Nano/Compact) and conditional sizing
+  of pools and *scratch* with `MFS_ALLOW_8BIT_TARGET`.
 
-### 🔄 Transaccionalidad (WAL+ v3)
-- **Tokens A/B** con **Contador Termométrico (TFC)**.
-- **Checkpoint** con raíz **BLAKE3** para recuperación rápida.
-- **Replay determinista** acotado por **cota BMT** (Bit Map Table).
-- **Snapshots y clones O(1)** vía `mf_snap_create()`.
-- **FormalCore**: verificación formal del replay y de invariantes del WAL+.
+### 🔄 Transactionality (WAL+ v3)
+- **A/B tokens** with a **Thermometric Counter (TFC)**.
+- **Checkpoint** with a **BLAKE3** root for fast recovery.
+- **Deterministic replay** bounded by the **BMT bound** (Bit Map Table).
+- **O(1) snapshots and clones** via `mf_snap_create()`.
+- **FormalCore**: formal verification of the replay and of the WAL+ invariants.
 
 ### 💾 FTL Ultra 2
 - **ZLF** (Zoned Log-Structured File) log-structured.
 - **L2P** (Logical-to-Physical) mapping.
-- **AGCB+** (Adaptive Garbage Collection Bandit) sobre deuda GLD.
-- **WOM-p** para FRAM/MRAM (Write-Once Memory, Feistel 16 b).
+- **AGCB+** (Adaptive Garbage Collection Bandit) on GLD debt.
+- **WOM-p** for FRAM/MRAM (Write-Once Memory, Feistel 16 b).
 - **SLEC**, **EBA**, **WEP**, **ZRP RS(16,15)** (Reed-Solomon).
-- **RAS + Thermal Governor** para gestión térmica.
+- **RAS + Thermal Governor** for thermal management.
 - **ELM/PEP** (Endurance Lifetime Model / Predictor).
-- **Bad-block table** para SD/eMMC.
+- **Bad-block table** for SD/eMMC.
 
-### ⚡ Gestión energética (EDP)
-- Modelo de drenaje de **5 niveles**.
-- **ELD** (Energy Leakage Debt) presupuestado.
-- **DAB bandit determinista EXP3** para reparto de energía.
+### ⚡ Energy management (EDP)
+- **5-level** draining model.
+- Budgeted **ELD** (Energy Leakage Debt).
+- **Deterministic DAB bandit EXP3** for energy allocation.
 
-### ⏱️ E/S determinista (DAIO v2)
-- Clases **RT-A / RT-B / RT-C** con *deadlines*.
+### ⏱️ Deterministic I/O (DAIO v2)
+- **RT-A / RT-B / RT-C** classes with *deadlines*.
 - **TCB-DA** (Time-Constrained Bandit for Deadline Allocation).
-- Latencia garantizada **p99.9 ≤ 3 ms en RT-A**.
-- **WCET** verificado por *stack-painting* y autómatas *model-checked*.
+- Guaranteed latency **p99.9 ≤ 3 ms on RT-A**.
+- **WCET** verified by *stack-painting* and *model-checked* automata.
 
-### 🔐 Seguridad cripto-agile
-- Suites **S0–S3**: AES-256-CTR+HMAC-SHA256 · AES-256-GCM · Ascon-128a · ChaCha20-Poly1305.
-- **HKDF-SHA256** para derivación de claves.
-- **Nonce normativo** (época × seq monotónico) y ceroización de claves/plaintext.
-- **Negociación de suite** en montaje y **deprecación programada** con migración *rewrap*.
-- **Ancla post-cuántica LMS** (NIST SP 800-208).
-- **PUF** con *fuzzy extractor* para anclaje de claves.
+### 🔐 Crypto-agile security
+- **S0–S3** suites: AES-256-CTR+HMAC-SHA256 · AES-256-GCM · Ascon-128a · ChaCha20-Poly1305.
+- **HKDF-SHA256** for key derivation.
+- **Normative nonce** (epoch × monotonic seq) and zeroization of keys/plaintext.
+- **Suite negotiation** at mount time and **scheduled deprecation** with *rewrap* migration.
+- **LMS post-quantum anchor** (NIST SP 800-208).
+- **PUF** with a *fuzzy extractor* for key anchoring.
 
-### 🗜️ Compresión y deduplicación (CCD v2)
-- **Deduplicación con filtro Cuckoo (CFX)**.
-- **CDC** (Content-Defined Chunking) con **Gear hash**.
-- **LZ4** y **FSST-lite** a nivel de página.
+### 🗜️ Compression and deduplication (CCD v2)
+- **Deduplication with Cuckoo filter (CFX)**.
+- **CDC** (Content-Defined Chunking) with **Gear hash**.
+- **LZ4** and **FSST-lite** at page level.
 
-### 🧬 Medios heterogéneos (HMT)
-- **Tiering heterogéneo T0/T1** (ej. FRAM + NAND).
-- Árbol de directorios único sobre ambos medios.
-- Soporte para **NAND ZNS-like** opcional.
+### 🧬 Heterogeneous media (HMT)
+- **T0/T1 heterogeneous tiering** (e.g. FRAM + NAND).
+- Single directory tree over both media.
+- Support for optional **ZNS-like NAND**.
 
-### 📡 E/S extendida (XIO)
+### 📡 Extended I/O (XIO)
 - **XDAM** (Extended Direct Access Mapping).
 - **SDP** (Sensor→DMA/CRC→pool→O_RAW).
 
 ---
 
-## 🏗️ Arquitectura del repositorio
+## 🏗️ Repository architecture
 
 ```text
 matrixfs-ultra/
@@ -254,18 +247,18 @@ matrixfs-ultra/
 
 ---
 
-## 🚀 Inicio rápido
+## 🚀 Quick start
 
-### 📦 Requisitos
+### 📦 Requirements
 
-- Compilador C11 (`gcc ≥ 9`, `clang ≥ 12`, o IAR/ARMCC para targets)
-- `make` o `cmake ≥ 3.16`
-- Host Linux/macOS/Windows-WSL para simulación y tests
-- Para MCU: el toolchain del objetivo (`arm-none-eabi-gcc`, `avr-gcc`, `sdcc`,
-  `xc8`, …). El núcleo no depende de plataforma; sólo hay que aportar el driver
-  L2 del medio (los drivers genéricos de MCU están en `platform/common/`).
+- C11 compiler (`gcc ≥ 9`, `clang ≥ 12`, or IAR/ARMCC for targets)
+- `make` or `cmake ≥ 3.16`
+- Linux/macOS/Windows-WSL host for simulation and tests
+- For MCU: the target toolchain (`arm-none-eabi-gcc`, `avr-gcc`, `sdcc`,
+  `xc8`, …). The core is platform-independent; only the media L2
+  driver needs to be provided (the generic MCU drivers are in `platform/common/`).
 
-### 🔨 Construir (host + vFlash)
+### 🔨 Build (host + vFlash)
 
 ```bash
 git clone https://github.com/<org>/matrixfs-ultra.git
@@ -276,7 +269,7 @@ make bench      # MFS-Bench v2 (W1–W11) sobre vFlash
 make mcu        # drivers L2 para MCU (libmatrixfs_mcu.a)
 ```
 
-### 🧑‍💻 Ejemplo mínimo de uso
+### 🧑‍💻 Minimal usage example
 
 ```c
 #include <matrixfs/matrixfs.h>
@@ -321,13 +314,13 @@ mf_ioctl(&fs, MFS_IOCTL_HEALTH, &h); /* WAF, TG, ELD, deuda GLD, errores */
 mf_deinit(&fs);
 ```
 
-### 🎯 Cross-compilación a target
+### 🎯 Cross-compilation to target
 
-El núcleo no tiene dependencias de plataforma: se compila con el toolchain del
-MCU. El **puerto** (§20.2) y el **modelo de arquitectura** ya viven en el núcleo
-(`src/core/mfs_port_arch.c`, `src/core/mfs_arch.c`); sólo hay que aportar el
-driver L2 del medio. Para objetivos de 8 bits, define `MFS_ALLOW_8BIT_TARGET=1`,
-que habilita los modos 8-bit y reduce pools y *scratch* al mínimo.
+The core has no platform dependencies: it is compiled with the MCU
+toolchain. The **port** (§20.2) and the **architecture model** already live in the core
+(`src/core/mfs_port_arch.c`, `src/core/mfs_arch.c`); only the media L2
+driver needs to be provided. For 8-bit targets, define `MFS_ALLOW_8BIT_TARGET=1`,
+which enables the 8-bit modes and reduces pools and *scratch* to a minimum.
 
 ```bash
 # Drivers L2 para MCU (NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI)
@@ -338,38 +331,38 @@ cmake -DMATRIXFS_BUILD_MCU=ON ..  # equivalente en CMake
 avr-gcc -std=c11 -Os -DMFS_ALLOW_8BIT_TARGET=1 ... # (usa tu toolchain real)
 ```
 
-### 🔌 Integración con ecosistemas embebidos
+### 🔌 Integration with embedded ecosystems
 
-Además del host (Linux/Windows), el repositorio incluye integraciones listas
-para los ecosistemas más usados de MCU de 32 bits:
+In addition to the host (Linux/Windows), the repository includes ready-made integrations
+for the most widely used 32-bit MCU ecosystems:
 
-| Ecosistema | Carpeta | Uso |
+| Ecosystem | Folder | Usage |
 |:---|:---|:---|
-| **Arduino** (ESP32, ESP8266, RP2040) | [`platform/arduino/`](platform/arduino/) | Librería C++ `MatrixFS` + ejemplos; reserva una partición/región de flash |
-| **ESP-IDF** (Espressif) | [`platform/esp-idf/`](platform/esp-idf/) | Componente externo sobre `esp_partition` + `Kconfig` |
-| **PlatformIO** | [`platform/platformio/`](platform/platformio/) | Proyecto de ejemplo que consume la librería de Arduino |
-| **MicroPython** | [`platform/micropython/`](platform/micropython/) | Usermod con el módulo `matrixfs` (`MatrixFS`, `File`) |
+| **Arduino** (ESP32, ESP8266, RP2040) | [`platform/arduino/`](platform/arduino/) | `MatrixFS` C++ library + examples; reserves a flash partition/region |
+| **ESP-IDF** (Espressif) | [`platform/esp-idf/`](platform/esp-idf/) | External component on top of `esp_partition` + `Kconfig` |
+| **PlatformIO** | [`platform/platformio/`](platform/platformio/) | Example project that consumes the Arduino library |
+| **MicroPython** | [`platform/micropython/`](platform/micropython/) | Usermod with the `matrixfs` module (`MatrixFS`, `File`) |
 
-Todas comparten la capa [`platform/embedded/`](platform/embedded/) (driver L2
-sobre una región de flash plana) y aportan las primitivas de puerto obligatorias
-(`mfs_port_*`) y un driver L2 sobre la flash del dispositivo. Guía completa:
+All of them share the [`platform/embedded/`](platform/embedded/) layer (L2 driver
+over a flat flash region) and provide the mandatory port primitives
+(`mfs_port_*`) and an L2 driver over the device flash. Full guide:
 [📘 DOCS/embedded-integration.md](DOCS/embedded-integration.md).
 
-El **soporte de 8 bits está integrado en el núcleo**, igual que 16/32/64: el
-puerto por arquitectura (AVR, 8051, STM8, PIC16/18, Z80) vive en
-[`src/core/mfs_port_arch.c`](src/core/mfs_port_arch.c) y la detección y
-autoconfiguración de arquitectura/aceleradores en
-[`src/core/mfs_arch.c`](src/core/mfs_arch.c). Los drivers de dispositivo
-(NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI) están en
+**8-bit support is integrated into the core**, just like 16/32/64: the
+per-architecture port (AVR, 8051, STM8, PIC16/18, Z80) lives in
+[`src/core/mfs_port_arch.c`](src/core/mfs_port_arch.c) and the detection and
+autoconfiguration of architecture/accelerators in
+[`src/core/mfs_arch.c`](src/core/mfs_arch.c). The device drivers
+(NOR/FRAM/EEPROM SPI-I2C, internal flash, SD-SPI) are in
 [`platform/common/mfs_l2_8bit.c`](platform/common/mfs_l2_8bit.c).
 
 > [!WARNING]
-> ⚠️ Las integraciones se han revisado por inspección estática y estructuran el
-> build correctamente, pero **no se han compilado con los SDK de terceros**
-> (Arduino-ESP32, ESP-IDF, MicroPython) en este repositorio. Cada `README`
-> detalla qué queda sin verificar.
+> ⚠️ The integrations have been reviewed by static inspection and structure the
+> build correctly, but **have not been compiled with the third-party SDKs**
+> (Arduino-ESP32, ESP-IDF, MicroPython) in this repository. Each `README`
+> details what remains unverified.
 
-### 🐧 Montar un volumen en Linux (FUSE 3)
+### 🐧 Mounting a volume on Linux (FUSE 3)
 
 ```bash
 cd platform/linux && make && sudo make install
@@ -378,11 +371,11 @@ sudo mount -t matrixfs /dev/sdb1 /mnt/datos   # montar
 # o añadir a /etc/fstab:  /dev/sdb1 /mnt/datos matrixfs defaults 0 0
 ```
 
-El automontaje por udev/systemd monta el volumen en
-`/run/media/matrixfs/<dispositivo>` al conectar el medio. Guía completa:
+The udev/systemd automount mounts the volume at
+`/run/media/matrixfs/<device>` when the media is connected. Full guide:
 [🐧 DOCS/linux-integration.md](DOCS/linux-integration.md).
 
-### 🪟 Montar un volumen en Windows 10/11 (WinFsp)
+### 🪟 Mounting a volume on Windows 10/11 (WinFsp)
 
 ```powershell
 cd platform\windows
@@ -392,295 +385,296 @@ matrixfs-ctl.exe format D:\vol0.img --label DATOS
 matrixfs_winfsp.exe D:\vol0.img X:            # o conectar el medio (automontaje)
 ```
 
-La unidad aparece en el Explorador de Archivos con operaciones nativas
-(copiar, pegar, eliminar, renombrar). Guía completa:
+The drive appears in File Explorer with native operations
+(copy, paste, delete, rename). Full guide:
 [🪟 DOCS/windows-integration.md](DOCS/windows-integration.md).
 
 ---
 
-## 🔒 Garantías normativas
+## 🔒 Normative guarantees
 
-Estas reglas son **auditables en build y runtime**, no aspiracionales:
+These rules are **auditable at build and runtime**, not aspirational:
 
-| ID | Regla | Mecanismo |
+| ID | Rule | Mechanism |
 |:---|:---|:---|
-| **MFS-RES-001** | Cero heap dinámico | Pools estáticos; revisión de mapa de símbolos (`check-map`) |
-| **MFS-ARCH-010 rev. 3** | Clases 8/16/32/64-bit | Autodetección de clase y de aceleradores HW; rechazo `MFS_EARCH` sólo si `arch_class > 3` |
-| **MFS-VIA-001/002** | Viabilidad honesta | Desglose fw+stack+perif+margen ≥10 % → `MFS_ENOTVIABLE` |
-| **MFS-BUS-001..004** | No interferencia | Medición de bus SOLO lectura; cero RAM persistente compartida |
-| **MFS-SEC-001** | Nonce normativo | época × seq monotónico; nunca reutilización |
-| **MFS-SEC-002** | Ceroización | Claves/nonce/plaintext limpiados tras uso |
-| **MFS-SEC-005** | EtM en S0 | Encrypt-then-MAC (AES-256-CTR + HMAC-SHA256) |
-| **MFS-HW-001** | Fallback SW | Aceleradores autodetectados (CRC-32C por instrucción) con ruta SW equivalente e idéntica |
-| **MFS-B3-001** | BLAKE3 conforme | Modo árbol estándar; KAT publicado |
-| **MFS-SCOPE-001** | Claims ligados | Todo KPI citable ↔ escenario MFS-Bench v2 |
+| **MFS-RES-001** | Zero dynamic heap | Static pools; symbol map review (`check-map`) |
+| **MFS-ARCH-010 rev. 3** | 8/16/32/64-bit classes | Autodetection of class and of HW accelerators; `MFS_EARCH` rejection only if `arch_class > 3` |
+| **MFS-VIA-001/002** | Honest viability | Breakdown fw+stack+periph+margin ≥10 % → `MFS_ENOTVIABLE` |
+| **MFS-BUS-001..004** | Non-interference | READ-ONLY bus measurement; zero shared persistent RAM |
+| **MFS-SEC-001** | Normative nonce | epoch × monotonic seq; never reuse |
+| **MFS-SEC-002** | Zeroization | Keys/nonce/plaintext wiped after use |
+| **MFS-SEC-005** | EtM in S0 | Encrypt-then-MAC (AES-256-CTR + HMAC-SHA256) |
+| **MFS-HW-001** | SW fallback | Autodetected accelerators (CRC-32C by instruction) with an equivalent and identical SW path |
+| **MFS-B3-001** | BLAKE3 compliant | Standard tree mode; published KAT |
+| **MFS-SCOPE-001** | Tied claims | Every citable KPI ↔ MFS-Bench v2 scenario |
 
-**Suites criptográficas (§10.6):** `S0` AES-256-CTR+HMAC-SHA256 · `S1` AES-256-GCM · `S2` Ascon-128a (SP 800-232) · `S3` ChaCha20-Poly1305 (RFC 8439). Negociación en montaje según HWV; deprecación programada con migración rewrap.
-
----
-
-## 🧪 Verificación (§27)
-
-- **Suite completa:** **1 232 comprobaciones, 0 fallos** (`mfs_tests.exe`), ejecutada **en Linux y en Windows**, incluyendo KAT, puerta de viabilidad, FIH, extremos funcionales, estrés, determinismo formal, la **capa de integración VFS** (permisos POSIX, metadatos, E/S y persistencia sobre un medio real, la misma ruta que usan FUSE y WinFsp), el **medio gestionado** sobre el adaptador L2 (RMW + TRIM, dispositivo simulado) y el **puerto RTOS** (detección, registro y contrato §20.2).
-- **Montaje real en Linux:** `mount -t matrixfs` sobre FUSE 3 (libfuse3 3.17.2) con **39 comprobaciones / 0 fallos**: fichero aleatorio de 24 MiB íntegro (`cmp` y md5), `cp`, `truncate` con prefijo intacto, `rename`, borrado, `chmod`/`chown` persistentes, remontaje con md5 idéntico y montaje de sólo lectura (`EROFS`).
-- **Interoperabilidad Linux ↔ Windows:** el mismo *layout* on-flash se lee en ambos sentidos (volumen creado en Windows leído en Linux y viceversa), con `verify=MFS_OK` y contenido idéntico.
-- **Compilación nativa verificada:** todo el proyecto con `-std=c11 -Wall -Wextra -Werror` en Linux (gcc 14.2) y Windows; `matrixfs_fuse` enlazado contra **libfuse3 3.17.2** real; los tres binarios de Windows compilados con **MSVC 14.51 `/W4` sin avisos** contra el SDK de WinFsp real. Detalles y pasos pendientes (privilegios) en [🧪 DOCS/testing.md](DOCS/testing.md).
-- **KATs:** CRC-32C `"123456789"` = `0xE3069283`; SHA-256/HMAC (RFC 4231); HKDF-SHA256 (RFC 5869 caso 1); BLAKE3 vectors oficiales; round-trip AEAD S0–S3.
-- **Invariantes:** orden WAL↔datos, integridad E2G, monotonía TFC, coherencia L2P↔ART.
-- **FIH (fault injection):** 10⁵ cortes aleatorios sin corrupción; 10⁴ drenajes EDP; fatiga acelerada de bloques; barrido de 1 000 cortes con fichero canario intacto.
-- **Extremos:** churn con GC/WAF, tormenta de metadatos, matriz S0–S3 con cifrado y remontaje, agotamiento de zonas con errores tipificados.
-- **Conformidad:** matriz §27 con huella de cada regla MFS-* sobre el código.
-- **Formal (FormalCore):** replay determinista (DAB/CUSUM/EDP) y 64 combinaciones de reanudación WAL+ sin violaciones.
-
-Ejecutar todo: `make test && make fih-short` · Rendimiento: `mfs_tests.exe --extreme` (el FIH completo requiere CI nocturno).
+**Cryptographic suites (§10.6):** `S0` AES-256-CTR+HMAC-SHA256 · `S1` AES-256-GCM · `S2` Ascon-128a (SP 800-232) · `S3` ChaCha20-Poly1305 (RFC 8439). Negotiation at mount time according to HWV; scheduled deprecation with rewrap migration.
 
 ---
 
-## 📊 Resultados de rendimiento extremo (MFS-Bench §17)
+## 🧪 Verification (§27)
 
-Medición sobre el puerto host con `vFlash` NOR (1 MiB, sector 4 KiB), compilación `-O2`. Ejecutable: `mfs_tests.exe --extreme`.
+- **Full suite:** **1,232 checks, 0 failures** (`mfs_tests.exe`), run **on Linux and on Windows**, including KAT, viability gate, FIH, functional extremes, stress, formal determinism, the **VFS integration layer** (POSIX permissions, metadata, I/O and persistence on a real medium, the same path used by FUSE and WinFsp), the **managed medium** on the L2 adapter (RMW + TRIM, simulated device) and the **RTOS port** (detection, registration and §20.2 contract).
+- **Real mount on Linux:** `mount -t matrixfs` on FUSE 3 (libfuse3 3.17.2) with **39 checks / 0 failures**: 24 MiB random file intact (`cmp` and md5), `cp`, `truncate` with prefix intact, `rename`, deletion, persistent `chmod`/`chown`, remount with identical md5 and read-only mount (`EROFS`).
+- **Linux ↔ Windows interoperability:** the same on-flash *layout* is read in both directions (volume created on Windows read on Linux and vice versa), with `verify=MFS_OK` and identical content.
+- **Verified native compilation:** the whole project with `-std=c11 -Wall -Wextra -Werror` on Linux (gcc 14.2) and Windows; `matrixfs_fuse` linked against real **libfuse3 3.17.2**; the three Windows binaries compiled with **MSVC 14.51 `/W4` without warnings** against the real WinFsp SDK. Details and pending steps (privileges) in [🧪 DOCS/testing.md](DOCS/testing.md).
+- **KATs:** CRC-32C `"123456789"` = `0xE3069283`; SHA-256/HMAC (RFC 4231); HKDF-SHA256 (RFC 5869 case 1); official BLAKE3 vectors; AEAD S0–S3 round-trip.
+- **Invariants:** WAL↔data ordering, E2G integrity, TFC monotonicity, L2P↔ART coherence.
+- **FIH (fault injection):** 10⁵ random cuts without corruption; 10⁴ EDP drainings; accelerated block fatigue; sweep of 1,000 cuts with canary file intact.
+- **Extremes:** churn with GC/WAF, metadata storm, S0–S3 matrix with encryption and remount, zone exhaustion with typed errors.
+- **Conformity:** §27 matrix with the fingerprint of each MFS-* rule on the code.
+- **Formal (FormalCore):** deterministic replay (DAB/CUSUM/EDP) and 64 WAL+ resume combinations without violations.
 
-### 🚀 Rendimiento por modo
+Run everything: `make test && make fih-short` · Performance: `mfs_tests.exe --extreme` (the full FIH requires nightly CI).
 
-| modo | chunk B | zonas | escritura MB/s | lectura MB/s | mount µs | WAF | estado |
+---
+
+## 📊 Extreme performance results (MFS-Bench §17)
+
+Measurement on the host port with NOR `vFlash` (1 MiB, 4 KiB sector), `-O2` build. Executable: `mfs_tests.exe --extreme`.
+
+### 🚀 Performance by mode
+
+| mode | chunk B | zones | write MB/s | read MB/s | mount µs | WAF | status |
 |:---|---:|---:|---:|---:|---:|---:|:--:|
-| Ultra-Nano | 108 | 128 | 32,69 | 130,96 | 690 | 1,04 | OK |
-| Nano | 236 | 128 | 23,97 | 168,80 | 842 | 1,08 | OK |
-| Compact | 492 | 128 | 20,55 | 183,48 | 1 356 | 1,15 | OK |
-| Balanced | 4 076 | 126 | 17,24 | 236,48 | 1 974 | 2,04 | OK |
-| Extended | 4 076 | 126 | 19,20 | 236,48 | 2 015 | 2,04 | OK |
+| Ultra-Nano | 108 | 128 | 32.69 | 130.96 | 690 | 1.04 | OK |
+| Nano | 236 | 128 | 23.97 | 168.80 | 842 | 1.08 | OK |
+| Compact | 492 | 128 | 20.55 | 183.48 | 1,356 | 1.15 | OK |
+| Balanced | 4,076 | 126 | 17.24 | 236.48 | 1,974 | 2.04 | OK |
+| Extended | 4,076 | 126 | 19.20 | 236.48 | 2,015 | 2.04 | OK |
 
-### 🔐 Throughput criptográfico por suite (§10.6)
+### 🔐 Cryptographic throughput per suite (§10.6)
 
-| suite | seal MB/s | open MB/s | tag B | nota |
+| suite | seal MB/s | open MB/s | tag B | note |
 |:---|---:|---:|---:|:---|
-| S0 AES-256-CTR + HMAC-SHA256 | 4,8 | 68,5 | 16 | EtM/AEAD verificado |
-| S1 AES-256-GCM | 1,4 | 2,1 | 16 | EtM/AEAD verificado |
-| S2 Ascon-128a | 1,6 | 1,6 | 16 | EtM/AEAD verificado |
-| S3 ChaCha20-Poly1305 | 75,9 | 426,3 | 16 | EtM/AEAD verificado |
+| S0 AES-256-CTR + HMAC-SHA256 | 4.8 | 68.5 | 16 | EtM/AEAD verified |
+| S1 AES-256-GCM | 1.4 | 2.1 | 16 | EtM/AEAD verified |
+| S2 Ascon-128a | 1.6 | 1.6 | 16 | EtM/AEAD verified |
+| S3 ChaCha20-Poly1305 | 75.9 | 426.3 | 16 | EtM/AEAD verified |
 
-### 🧮 Coste por operación de subsistemas FTL/seguridad (§11, §15)
+### 🧮 Cost per FTL/security subsystem operation (§11, §15)
 
-| operación | coste µs | nota |
+| operation | cost µs | note |
 |:---|---:|:---|
-| `crc32c(4 KiB)` | 16,29 | integridad E2G |
-| `HKDF-SHA256` | 7,40 | derivación de claves (§15) |
-| `ELM health` | 0,010 | modelo de vida §11.1 |
-| `PEP score (4×32)` | 0,236 | WCET < 5 µs §11.1 |
-| `LMS keygen (H=8)` | 249 055 | ancla post-cuántica §15 (una vez, enrolamiento) |
-| `LMS verify` | 456 | secure-boot (una vez por arranque) |
-| `ZRP encode (16 pág)` | 12,0 | +6,25 % en zonas frías §8.5 |
-| `ZRP recover (1 pág)` | 12,0 | reconstrucción RS(16,15), nivel 5 §12 |
-| `WEP place (caché)` | 0,094 | Feistel 16 b §11.2 Balanced+ |
+| `crc32c(4 KiB)` | 16.29 | E2G integrity |
+| `HKDF-SHA256` | 7.40 | key derivation (§15) |
+| `ELM health` | 0.010 | lifetime model §11.1 |
+| `PEP score (4×32)` | 0.236 | WCET < 5 µs §11.1 |
+| `LMS keygen (H=8)` | 249,055 | post-quantum anchor §15 (once, enrollment) |
+| `LMS verify` | 456 | secure-boot (once per boot) |
+| `ZRP encode (16 pág)` | 12.0 | +6.25 % in cold zones §8.5 |
+| `ZRP recover (1 pág)` | 12.0 | RS(16,15) reconstruction, level 5 §12 |
+| `WEP place (caché)` | 0.094 | Feistel 16 b §11.2 Balanced+ |
 
-### 🛡️ WAF y durabilidad por workload (§17.1/§17.3)
+### 🛡️ WAF and durability per workload (§17.1/§17.3)
 
-| workload | ops | WAF | GC reloc | resultado |
+| workload | ops | WAF | GC reloc | result |
 |:---|---:|---:|---:|:--:|
-| W1 append secuencial | 260 | 1,188 | 0 | MFS_OK |
-| W3 random en fichero | 400 | 1,161 | 780 | MFS_OK |
-| W4 mixto churn 90/10 | 260 | 1,254 | 138 | MFS_OK |
+| W1 sequential append | 260 | 1.188 | 0 | MFS_OK |
+| W3 random within file | 400 | 1.161 | 780 | MFS_OK |
+| W4 mixed churn 90/10 | 260 | 1.254 | 138 | MFS_OK |
 
-### 📐 Huella de memoria estática (MFS-RES-001: sin heap)
+### 📐 Static memory footprint (MFS-RES-001: no heap)
 
-| estructura | bytes | uso |
+| structure | bytes | usage |
 |:---|---:|:---|
-| `mf_t` (núcleo, host 64-bit) | ≈ 17 240 | instancia única §23.1 |
-| `mf_t` (build 8-bit, `MFS_ALLOW_8BIT_TARGET`) | ≈ 1 840 | pools y scratch reducidos (≤ 2 KB) |
-| `mfs_inode_ram_t` | 148 | ventana flash-first §22.3 |
-| `mfs_zone_t` | 36 | tabla de zonas §24.1 |
-| `mfs_iocb` | 32 | ring DAIO §13.1 |
+| `mf_t` (core, 64-bit host) | ≈ 17,240 | single instance §23.1 |
+| `mf_t` (8-bit build, `MFS_ALLOW_8BIT_TARGET`) | ≈ 1,840 | reduced pools and scratch (≤ 2 KB) |
+| `mfs_inode_ram_t` | 148 | flash-first window §22.3 |
+| `mfs_zone_t` | 36 | zone table §24.1 |
+| `mfs_iocb` | 32 | DAIO ring §13.1 |
 | `mfs_wom_t` | 12 | WOM-p §11.4 |
-| `mfs_health_t` | 168 | telemetría HCT §16 |
-| `mfs_hwv_t` | 76 | HWV (en flash) §5.2 |
-| Tabla CRC-32C (16/32/64-bit vs 8-bit) | 1024 → 64 | tabla completa vs *nibble* |
+| `mfs_health_t` | 168 | HCT telemetry §16 |
+| `mfs_hwv_t` | 76 | HWV (in flash) §5.2 |
+| CRC-32C table (16/32/64-bit vs 8-bit) | 1024 → 64 | full table vs *nibble* |
 
 > [!NOTE]
-> **Nota metodológica:** los valores son cotas superiores medidas en host (no son WCET de target); la huella estática es determinista y verificable en compilación. Las desviaciones y límites conocidos se detallan en [⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md).
+> **Methodological note:** the values are upper bounds measured on host (they are not target WCET); the static footprint is deterministic and verifiable at compile time. Deviations and known limits are detailed in [⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md).
 
 ---
 
-## 🛠️ Herramientas
+## 🛠️ Tools
 
 ### 🧰 `mfstool`
-CLI para:
-- Generar **manifiestos** de build y despliegue.
-- Analizar **trazas HCT** (Health Check Trace).
-- Ejecutar el banco de pruebas **MFS-Bench v2**.
-- Analizador de conformidad contra MFS-SPEC-003.
+CLI for:
+- Generating build and deployment **manifests**.
+- Analyzing **HCT traces** (Health Check Trace).
+- Running the **MFS-Bench v2** test bench.
+- Conformity analyzer against MFS-SPEC-003.
 
 ### 🧪 `vFlash` / `vFRAM`
-Simuladores de memoria para desarrollo en host:
-- Inyección de fallos y **cortes de energía** (crash/recover).
-- Modelado de latencias y geometrías (NOR/NAND).
-- Tier **T0 byte-addressable** (FRAM/MRAM) sin erase.
+Memory simulators for host development:
+- Fault injection and **power cuts** (crash/recover).
+- Latency and geometry modeling (NOR/NAND).
+- **T0 byte-addressable** tier (FRAM/MRAM) without erase.
 
 ### ✅ `FormalCore`
-- Verificación formal del **replay determinista** (DAB/CUSUM/EDP).
-- Comprobación de **invariantes del WAL+** (64 combinaciones de reanudación).
+- Formal verification of the **deterministic replay** (DAB/CUSUM/EDP).
+- **WAL+ invariant** checking (64 resume combinations).
 
 ---
 
-## 🖥️ Plataformas y ecosistemas soportados
+## 🖥️ Supported platforms and ecosystems
 
-### 🖥️ Sistemas operativos de escritorio
+### 🖥️ Desktop operating systems
 
-| SO | Integración | Estado |
+| OS | Integration | Status |
 |:---|:---|:---|
-| **Linux 5.4+/6.x/7.x** | FUSE 3, `fstab`, systemd, udev, deb/rpm | ✅ Verificado (39/0) |
-| **Windows 10/11** | WinFsp, letra de unidad, servicio, Inno Setup | ✅ Compilado · ⏳ montaje real pendiente |
+| **Linux 5.4+/6.x/7.x** | FUSE 3, `fstab`, systemd, udev, deb/rpm | ✅ Verified (39/0) |
+| **Windows 10/11** | WinFsp, drive letter, service, Inno Setup | ✅ Compiled · ⏳ real mount pending |
 
-### 🧩 Frameworks embebidos
+### 🧩 Embedded frameworks
 
-| Framework | Carpeta | Estado |
+| Framework | Folder | Status |
 |:---|:---|:---|
-| **Arduino** (ESP32, ESP8266, RP2040) | `platform/arduino/` | 🟡 Implementado · ⏳ sin compilar con SDK |
-| **ESP-IDF** (Espressif) | `platform/esp-idf/` | 🟡 Implementado · ⏳ sin compilar con SDK |
-| **PlatformIO** | `platform/platformio/` | 🟡 Implementado · ⏳ sin compilar con SDK |
-| **MicroPython** | `platform/micropython/` | 🟡 Implementado · ⏳ sin compilar con SDK |
+| **Arduino** (ESP32, ESP8266, RP2040) | `platform/arduino/` | 🟡 Implemented · ⏳ not compiled with SDK |
+| **ESP-IDF** (Espressif) | `platform/esp-idf/` | 🟡 Implemented · ⏳ not compiled with SDK |
+| **PlatformIO** | `platform/platformio/` | 🟡 Implemented · ⏳ not compiled with SDK |
+| **MicroPython** | `platform/micropython/` | 🟡 Implemented · ⏳ not compiled with SDK |
 
-### 🏗️ Arquitecturas de MCU (integradas en el núcleo)
+### 🏗️ MCU architectures (integrated into the core)
 
-| Clase | Puerto | Modos | Notas |
+| Class | Port | Modes | Notes |
 |:---|:---|:---|:---|
-| **8 bits** (AVR, 8051, STM8, PIC16/18, Z80) | `src/core/mfs_port_arch.c` | 8-bit Ultra / Nano / Compact | ≤ 2 KB de RAM, CRC-32C con tabla de *nibble*, sin AEAD |
-| **16 / 32 bits** (ARM Cortex-M, MSP430, AVR32…) | `src/core/mfs_port_arch.c` (genérico) o el del integrador | Ultra-Nano … Extended | Familia clásica; suites S0–S3 |
-| **64 bits** (x86-64, ARM64, RISC-V 64) | `src/core/mfs_port_arch.c` (genérico) o el del integrador | Extended como techo | Suite clásica; **aceleración HW autodetectada** |
+| **8-bit** (AVR, 8051, STM8, PIC16/18, Z80) | `src/core/mfs_port_arch.c` | 8-bit Ultra / Nano / Compact | ≤ 2 KB of RAM, CRC-32C with *nibble* table, no AEAD |
+| **16 / 32-bit** (ARM Cortex-M, MSP430, AVR32…) | `src/core/mfs_port_arch.c` (generic) or the integrator's | Ultra-Nano … Extended | Classic family; suites S0–S3 |
+| **64-bit** (x86-64, ARM64, RISC-V 64) | `src/core/mfs_port_arch.c` (generic) or the integrator's | Extended as ceiling | Classic suite; **autodetected HW acceleration** |
 
-La **detección y autoconfiguración** (`src/core/mfs_arch.c`) clasifica la
-arquitectura (`MFS_ARCH_AUTO` o declarada) y detecta aceleradores
-(CRC-32C por instrucción, AES, SHA-256, CLMUL, SIMD, RNG, CAS atómicos). El
-**CRC-32C se acelera automáticamente** cuando la CPU expone la instrucción
-(x86 SSE4.2 / ARMv8 CRC32, mismo polinomio de Castagnoli ⇒ resultado idéntico);
-el resto de capacidades se reportan para diagnóstico y planificación, y su ruta
-efectiva sigue siendo software (MFS-HW-001: nunca se declara una capacidad que
-no se pueda ejecutar).
+**Detection and autoconfiguration** (`src/core/mfs_arch.c`) classifies the
+architecture (`MFS_ARCH_AUTO` or declared) and detects accelerators
+(CRC-32C by instruction, AES, SHA-256, CLMUL, SIMD, RNG, atomic CAS). **CRC-32C
+is accelerated automatically** when the CPU exposes the instruction
+(x86 SSE4.2 / ARMv8 CRC32, same Castagnoli polynomial ⇒ identical result);
+the rest of the capabilities are reported for diagnosis and planning, and their
+effective path remains software (MFS-HW-001: a capability that cannot be
+executed is never declared).
 
-### 🤖 MCU de 8 bits
-- **AVR, 8051, STM8, PIC16/18, Z80** vía el puerto del núcleo `src/core/mfs_port_arch.c`.
-- Modos **8-bit Ultra / Nano / Compact**.
-- Drivers SPI/I²C para NOR/FRAM/EEPROM/flash-interna/SD-SPI (`platform/common/mfs_l2_8bit.c`).
-- Autodetección de capacidades y autoadaptación de la configuración.
+### 🤖 8-bit MCUs
+- **AVR, 8051, STM8, PIC16/18, Z80** via the core port `src/core/mfs_port_arch.c`.
+- **8-bit Ultra / Nano / Compact** modes.
+- SPI/I²C drivers for NOR/FRAM/EEPROM/internal-flash/SD-SPI (`platform/common/mfs_l2_8bit.c`).
+- Capability autodetection and automatic adaptation of the configuration.
 
 ### ⏱️ RTOS
-- **Puerto RTOS genérico en el núcleo** (`src/core/mfs_port_rtos.c`,
-  `include/matrixfs/mfs_port_rtos.h`): mapea el contrato `mfs_port_*` a las
-  primitivas nativas del RTOS y se selecciona por detección en tiempo de
-  compilación.
-- **Adaptadores nativos cableados**: **FreeRTOS** (`taskENTER/EXIT_CRITICAL`),
-  **Zephyr RTOS** (`irq_lock/unlock`, `k_cycle_get_32`) y **Eclipse ThreadX**
+- **Generic RTOS port in the core** (`src/core/mfs_port_rtos.c`,
+  `include/matrixfs/mfs_port_rtos.h`): maps the `mfs_port_*` contract to the
+  RTOS native primitives and is selected by detection at compile
+  time.
+- **Hardwired native adapters**: **FreeRTOS** (`taskENTER/EXIT_CRITICAL`),
+  **Zephyr RTOS** (`irq_lock/unlock`, `k_cycle_get_32`) and **Eclipse ThreadX**
   (`tx_interrupt_control`, `tx_time_get`).
-- **Detección + registro** para **Mbed OS, Apache NuttX, RIOT OS, Apache Mynewt,
-  RT-Thread y PX5 RTOS**, con la plantilla `platform/rtos/mfs_rtos_port_template.c`.
-- Guía completa: [⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md).
+- **Detection + registration** for **Mbed OS, Apache NuttX, RIOT OS, Apache Mynewt,
+  RT-Thread and PX5 RTOS**, with the `platform/rtos/mfs_rtos_port_template.c` template.
+- Full guide: [⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md).
 
-### 🏭 SDKs de fabricantes
-- Integración a través de los puntos de enganche: driver de flash del SDK →
-  capa `mfs_embedded` / `mfs_l2_managed`, y RTOS del SDK → puerto RTOS.
+### 🏭 Vendor SDKs
+- Integration through the hook points: SDK flash driver →
+  `mfs_embedded` / `mfs_l2_managed` layer, and SDK RTOS → RTOS port.
 - **Silicon Labs** (Gecko SDK), **Texas Instruments** (SimpleLink/MSPM0),
-  **Infineon** (ModusToolbox), **Renesas** (FSP): guía y puntos de enganche en
-  [⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md) §4 (depende del SoC
-  concreto).
+  **Infineon** (ModusToolbox), **Renesas** (FSP): guide and hook points in
+  [⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md) §4 (depends on the concrete
+  SoC).
 
 ---
 
-## 🗺️ Roadmap y estado
+## 🗺️ Roadmap and status
 
-| Fase | Contenido | Estado |
+| Phase | Content | Status |
 |:---|:---|:---|
-| **1 — Núcleo y viabilidad** | Puerto, HWV, cascada HAL, viabilidad/modos, RSC+pools, extents+L2P, WAL+, UN/Nano/Compact | ✅ Implementado · ✅ KATs y suite en verde |
-| **2 — Diferenciación** | GLD/WOM-p/TFC/E2G/ZLF/HCT/CCD/AGCB+/CFX+CDC/MFS-Snap/FPT/ELD | ✅ Implementado · ✅ MFS-Bench (tablas arriba) |
-| **3 — Industrial** | HAWL+ · ELM/WEP/CV/RAS+TG/EBA/EDP/ZRP/PUF/cadena PQ/FormalCore + vFlash CI | ✅ Implementado (FormalCore = replay determinista + invariantes WAL+) |
-| **4 — Optimización avanzada** | Hint RT-C/PEP/SDP/FSST/ZLF-Z/CQE/diccionarios on-device | ✅ Implementado (PEP, SDP, FSST-lite, ZRP, CQE) |
-| **5 — Certificación** | Dossier SIL-2/21434, deprecación de suites, tooling de flota | 🟡 Tooling listo · dossier de certificación pendiente (no es código) |
-| **6 — Integración con el SO** | Linux (FUSE 3, kernels 5.4+/6.x/7.x, `fstab`, systemd, udev, deb/rpm) · Windows 10/11 (WinFsp, letra de unidad, Explorador, servicio de automontaje, Inno Setup) | ✅ Implementado · ✅ montaje real verificado en Linux (39/0) · ✅ interoperabilidad Linux↔Windows · ⏳ montaje real en Windows pendiente (requiere sesión elevada) |
-| **7 — Arquitecturas y ecosistemas embebidos** | Clases **8/16/32/64-bit** con autodetección y **autoconfiguración de aceleración HW** · puerto y modelo de arquitectura en el núcleo (`src/core/mfs_arch.c`, `mfs_port_arch.c`) · drivers MCU (`platform/common/mfs_l2_8bit.c`) · capa común `platform/embedded` · integraciones **Arduino, ESP-IDF, PlatformIO y MicroPython** | ✅ Implementado · ✅ 64-bit, CRC-32C acelerado y capa embebida verificados en host · ⏳ compilación con SDK/toolchains de terceros pendiente |
-| **8 — RTOS y SDKs de fabricantes** | Puerto **RTOS genérico** en el núcleo con adaptadores nativos de **FreeRTOS, Zephyr y ThreadX**; detección + registro para Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y PX5; puntos de enganche para Silicon Labs, TI, Infineon y Renesas | 🟡 Implementado · ✅ detección/registro/contrato verificados en host · ⏳ adaptadores nativos de RTOS sin compilar aquí (sin toolchain del RTOS) |
-| **9 — Almacenamiento flash completo** | Medios **SATA** y **UFS** en el modelo + perfiles; **adaptador L2 MANAGED** genérico (sectores + TRIM + RMW); simulador de dispositivo gestionado y test en host | 🟡 Implementado · ✅ verificado en host (simulador) · ⏳ drivers de silicio (SD/eMMC/UFS/NVMe/SATA) dependen del SDK del SoC |
+| **1 — Core and viability** | Port, HWV, HAL cascade, viability/modes, RSC+pools, extents+L2P, WAL+, UN/Nano/Compact | ✅ Implemented · ✅ KATs and suite green |
+| **2 — Differentiation** | GLD/WOM-p/TFC/E2G/ZLF/HCT/CCD/AGCB+/CFX+CDC/MFS-Snap/FPT/ELD | ✅ Implemented · ✅ MFS-Bench (tables above) |
+| **3 — Industrial** | HAWL+ · ELM/WEP/CV/RAS+TG/EBA/EDP/ZRP/PUF/PQ chain/FormalCore + vFlash CI | ✅ Implemented (FormalCore = deterministic replay + WAL+ invariants) |
+| **4 — Advanced optimization** | RT-C hint/PEP/SDP/FSST/ZLF-Z/CQE/on-device dictionaries | ✅ Implemented (PEP, SDP, FSST-lite, ZRP, CQE) |
+| **5 — Certification** | SIL-2/21434 dossier, suite deprecation, fleet tooling | 🟡 Tooling ready · certification dossier pending (not code) |
+| **6 — OS integration** | Linux (FUSE 3, kernels 5.4+/6.x/7.x, `fstab`, systemd, udev, deb/rpm) · Windows 10/11 (WinFsp, drive letter, Explorer, automount service, Inno Setup) | ✅ Implemented · ✅ real mount verified on Linux (39/0) · ✅ Linux↔Windows interoperability · ⏳ real mount on Windows pending (requires elevated session) |
+| **7 — Embedded architectures and ecosystems** | **8/16/32/64-bit** classes with autodetection and **HW acceleration autoconfiguration** · port and architecture model in the core (`src/core/mfs_arch.c`, `mfs_port_arch.c`) · MCU drivers (`platform/common/mfs_l2_8bit.c`) · common `platform/embedded` layer · **Arduino, ESP-IDF, PlatformIO and MicroPython** integrations | ✅ Implemented · ✅ 64-bit, accelerated CRC-32C and embedded layer verified on host · ⏳ compilation with third-party SDKs/toolchains pending |
+| **8 — RTOS and vendor SDKs** | **Generic RTOS port** in the core with native **FreeRTOS, Zephyr and ThreadX** adapters; detection + registration for Mbed OS, NuttX, RIOT, Mynewt, RT-Thread and PX5; hook points for Silicon Labs, TI, Infineon and Renesas | 🟡 Implemented · ✅ detection/registration/contract verified on host · ⏳ native RTOS adapters not compiled here (no RTOS toolchain) |
+| **9 — Complete flash storage** | **SATA** and **UFS** media in the model + profiles; generic **MANAGED L2 adapter** (sectors + TRIM + RMW); managed device simulator and host test | 🟡 Implemented · ✅ verified on host (simulator) · ⏳ silicon drivers (SD/eMMC/UFS/NVMe/SATA) depend on the SoC SDK |
 
-**Estado actual:** subsistemas de Fase 3–4 implementados y verificados — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), tiering HMT T0/T1, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE y FormalCore. La capa de integración con el sistema operativo (carpetas `platform/linux` y `platform/windows`, con la capa portable compartida `platform/common`) está implementada y **verificada con montaje real en Linux** (39 OK / 0 fallos) e **interoperabilidad bidireccional Linux ↔ Windows**. Sobre ella se añade el **soporte de arquitecturas 8/16/32/64 bits integrado en el núcleo** (`src/core/mfs_arch.c` + `mfs_port_arch.c`, con detección y autoconfiguración de aceleración por hardware), los **drivers L2 para MCU**, las **integraciones para Arduino, ESP-IDF, PlatformIO y MicroPython** sobre la capa común `platform/embedded`, el **puerto RTOS genérico** (`src/core/mfs_port_rtos.c`, con adaptadores nativos de FreeRTOS/Zephyr/ThreadX y registro para el resto) y el **adaptador L2 para medios gestionados** (`platform/common/mfs_l2_managed.c`: SD/eMMC/UFS/USB/NVMe/SATA). Suite completa **1 232 checks / 0 fallos** con `-std=c11 -Wall -Wextra -Werror` sin avisos en Linux y Windows. Los límites y desviaciones vigentes están inventariados en [⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md). Ver [📋 CHANGELOG.md](CHANGELOG.md).
+**Current status:** Phase 3–4 subsystems implemented and verified — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), HMT T0/T1 tiering, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE and FormalCore. The operating system integration layer (`platform/linux` and `platform/windows` folders, with the shared portable layer `platform/common`) is implemented and **verified with a real mount on Linux** (39 OK / 0 failures) and **bidirectional Linux ↔ Windows interoperability**. On top of it are added the **8/16/32/64-bit architecture support integrated into the core** (`src/core/mfs_arch.c` + `mfs_port_arch.c`, with detection and autoconfiguration of hardware acceleration), the **L2 drivers for MCU**, the **integrations for Arduino, ESP-IDF, PlatformIO and MicroPython** on top of the common `platform/embedded` layer, the **generic RTOS port** (`src/core/mfs_port_rtos.c`, with native FreeRTOS/Zephyr/ThreadX adapters and registration for the rest) and the **L2 adapter for managed media** (`platform/common/mfs_l2_managed.c`: SD/eMMC/UFS/USB/NVMe/SATA). Full suite **1,232 checks / 0 failures** with `-std=c11 -Wall -Wextra -Werror` without warnings on Linux and Windows. The current limits and deviations are inventoried in [⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md). See [📋 CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-## 🌐 Multiidioma
+## 🌐 Multilingual
 
-Este README se traduce automáticamente mediante **GitHub Actions** en cada cambio de [README.md](README.md).
-GitHub **no** ofrece traducción nativa de READMEs, por lo que el proyecto la implementa con el workflow
-[`.github/workflows/translate-readme.yml`](.github/workflows/translate-readme.yml), que usa
-[`.github/languages.yaml`](.github/languages.yaml) como **única fuente de verdad** de los idiomas.
+This README is written in **English** in [`README.md`](README.md) (base language) and the rest of the languages are
+translated automatically with **GitHub Actions**. GitHub does **not** offer native README translation, so the
+project implements it with the workflow
+[`.github/workflows/translate-readme.yml`](.github/workflows/translate-readme.yml), which uses
+[`.github/languages.yaml`](.github/languages.yaml) as the **single source of truth** for the languages.
 
-- **Idioma fuente:** 🇪🇸 **Español (`es`)** — todo el contenido original de este README está redactado en español.
-- **Idiomas generados:** 🇺🇸 inglés (`en`), 🇨🇳 chino simplificado (`zh-CN`), 🇩🇪 alemán (`de`), 🇯🇵 japonés (`ja`), 🇫🇷 francés (`fr`), 🇧🇷 portugués de Brasil (`pt-BR`), 🇷🇺 ruso (`ru`), 🇰🇷 coreano (`ko`) e 🇮🇹 italiano (`it`).
+- **Base (source) language:** 🇺🇸 **English (`en`)** — file [`README.md`](README.md).
+- **Generated languages:** �🇸 Spanish (`es`), 🇨🇳 Simplified Chinese (`zh-CN`), 🇩🇪 German (`de`), 🇯🇵 Japanese (`ja`), 🇫🇷 French (`fr`), 🇧🇷 Brazilian Portuguese (`pt-BR`), 🇷🇺 Russian (`ru`), 🇰🇷 Korean (`ko`) and 🇮🇹 Italian (`it`).
 
-En cada *push* que modifique `README.md`, el workflow genera `README.<código>.md` para cada idioma destino y los
-**commitea automáticamente**. El selector de idiomas de la cabecera enlaza a esos archivos; los enlaces relativos,
-imágenes y bloques de código se conservan porque la traducción sólo afecta al texto. Los `README.md` de las
-subcarpetas del proyecto (`DOCS/`, `platform/*/`, etc.) **no se traducen**.
+On every *push* that modifies `README.md`, the workflow regenerates `README.<code>.md` for each target language and
+**commits them automatically**. The header language selector links to those files; relative links, images and code
+blocks are preserved because the translation only affects text. The `README.md` of the project subfolders
+(`DOCS/`, `platform/*/`, etc.) **are not translated**.
 
 > [!NOTE]
-> El workflow requiere el secret `ACTION_BOT` (PAT con scopes `repo` y `workflow`) en *Settings → Secrets and
-> variables → Actions*. Opcionalmente `OPENAI_API_KEY` (gpt-4o) o `ZHIPUAI_API_KEY` (glm-4-flash) mejoran la
-> calidad; sin ninguna clave se usa el backend gratuito `g4f`.
+> The workflow requires the `ACTION_BOT` secret (PAT with `repo` and `workflow` scopes) in *Settings → Secrets and
+> variables → Actions*. Optionally `OPENAI_API_KEY` (gpt-4o) or `ZHIPUAI_API_KEY` (glm-4-flash) improve the
+> quality; without any key the free `g4f` backend is used.
 
-| Idioma | Código | Archivo | Rol |
+| Language | Code | File | Role |
 |:---|:---|:---|:---|
-| 🇪🇸 Español | `es` | [`README.md`](README.md) | **Fuente / predeterminado** |
-| 🇺🇸 English | `en` | [`README.en.md`](README.en.md) | Traducción automática · prioridad 1 |
-| 🇨🇳 中文（简体） | `zh-CN` | [`README.zh-CN.md`](README.zh-CN.md) | Traducción automática · prioridad 2 |
-| 🇩🇪 Deutsch | `de` | [`README.de.md`](README.de.md) | Traducción automática · prioridad 3 |
-| 🇯🇵 日本語 | `ja` | [`README.ja.md`](README.ja.md) | Traducción automática · prioridad 4 |
-| 🇫🇷 Français | `fr` | [`README.fr.md`](README.fr.md) | Traducción automática · prioridad 5 |
-| 🇧🇷 Português (Brasil) | `pt-BR` | [`README.pt-BR.md`](README.pt-BR.md) | Traducción automática · prioridad 6 |
-| 🇷🇺 Русский | `ru` | [`README.ru.md`](README.ru.md) | Traducción automática · prioridad 7 |
-| 🇰🇷 한국어 | `ko` | [`README.ko.md`](README.ko.md) | Traducción automática · prioridad 8 |
-| 🇮🇹 Italiano | `it` | [`README.it.md`](README.it.md) | Traducción automática · prioridad 9 |
+| �🇸 English | `en` | [`README.md`](README.md) | **Base / source** |
+| �🇸 Español | `es` | [`README.es.md`](README.es.md) | Auto translation · priority 1 |
+| 🇨🇳 中文（简体） | `zh-CN` | [`README.zh-CN.md`](README.zh-CN.md) | Auto translation · priority 2 |
+| 🇩🇪 Deutsch | `de` | [`README.de.md`](README.de.md) | Auto translation · priority 3 |
+| 🇯🇵 日本語 | `ja` | [`README.ja.md`](README.ja.md) | Auto translation · priority 4 |
+| 🇫🇷 Français | `fr` | [`README.fr.md`](README.fr.md) | Auto translation · priority 5 |
+| 🇧🇷 Português (Brasil) | `pt-BR` | [`README.pt-BR.md`](README.pt-BR.md) | Auto translation · priority 6 |
+| 🇷🇺 Русский | `ru` | [`README.ru.md`](README.ru.md) | Auto translation · priority 7 |
+| 🇰🇷 한국어 | `ko` | [`README.ko.md`](README.ko.md) | Auto translation · priority 8 |
+| 🇮🇹 Italiano | `it` | [`README.it.md`](README.it.md) | Auto translation · priority 9 |
 
 ---
 
-## 📚 Documentación
+## 📚 Documentation
 
-- **[📐 DOCS/…Guide.md](DOCS/MatrixFS%20-%20Technical%20Specifications%20and%20Implementation%20Guide.md)** — Especificación normativa completa (31 secciones): principios, HAL, viabilidad, formato físico, WAL+, pipeline CCD, FTL, EDP/DAIO, seguridad, HCT, modos, guía de implementación (API, estructuras on-flash, FSMs, constantes), plan de verificación.
-- **[📘 DOCS/](DOCS/)** — Guías de diseño e implementación por módulo (arquitectura, HAL/viabilidad, E2G, WAL/transacciones, suites criptográficas, RT/energía, layout flash, contrato de puertos, conformidad/tests).
-- **[🐧 DOCS/linux-integration.md](DOCS/linux-integration.md)** — Integración con Linux: matriz de kernels, requisitos de compilación, instalación, `fstab`, systemd/udev, paquetes deb/rpm, resolución de problemas y validación.
-- **[🪟 DOCS/windows-integration.md](DOCS/windows-integration.md)** — Integración con Windows 10/11: WinFsp, compilación con MSVC, letra de unidad, tabla de operaciones del Explorador, servicio de automontaje, instalador y validación.
-- **[🔌 DOCS/embedded-integration.md](DOCS/embedded-integration.md)** — Integración embebida: puerto y arquitectura en el núcleo (8/16/32/64-bit), capa común `platform/embedded`, drivers MCU y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython.
-- **[💾 DOCS/storage-integration.md](DOCS/storage-integration.md)** — Almacenamiento flash: motores RAW/ZONED/MANAGED, adaptador L2 para medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA), ejemplos y validación.
-- **[⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md)** — RTOS y plataformas de silicio: puerto RTOS genérico, adaptadores nativos (FreeRTOS/Zephyr/ThreadX), plantilla de portado y puntos de enganche (Silicon Labs, TI, Infineon, Renesas).
-- **[⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md)** — Límites y desviaciones vigentes respecto a la spec.
-- **[🧪 DOCS/testing.md](DOCS/testing.md)** — Pasos de verificación y privilegios requeridos.
-- **[🤝 CONTRIBUTING.md](CONTRIBUTING.md)** — Cómo proponer mejoras, reportar desviaciones respecto a la spec y enviar KATs.
-- **[🔧 tools/](tools/)** — `mfstool`: generador de manifiestos, analizador de trazas HCT, banco MFS-Bench v2, emparejador formal.
+- **[📐 DOCS/…Guide.md](DOCS/MatrixFS%20-%20Technical%20Specifications%20and%20Implementation%20Guide.md)** — Complete normative specification (31 sections): principles, HAL, viability, physical format, WAL+, CCD pipeline, FTL, EDP/DAIO, security, HCT, modes, implementation guide (API, on-flash structures, FSMs, constants), verification plan.
+- **[📘 DOCS/](DOCS/)** — Design and implementation guides per module (architecture, HAL/viability, E2G, WAL/transactions, cryptographic suites, RT/energy, flash layout, port contract, conformity/tests).
+- **[🐧 DOCS/linux-integration.md](DOCS/linux-integration.md)** — Linux integration: kernel matrix, build requirements, installation, `fstab`, systemd/udev, deb/rpm packages, troubleshooting and validation.
+- **[🪟 DOCS/windows-integration.md](DOCS/windows-integration.md)** — Windows 10/11 integration: WinFsp, MSVC build, drive letter, Explorer operations table, automount service, installer and validation.
+- **[🔌 DOCS/embedded-integration.md](DOCS/embedded-integration.md)** — Embedded integration: port and architecture in the core (8/16/32/64-bit), common `platform/embedded` layer, MCU drivers and Arduino, ESP-IDF, PlatformIO and MicroPython ecosystems.
+- **[💾 DOCS/storage-integration.md](DOCS/storage-integration.md)** — Flash storage: RAW/ZONED/MANAGED engines, L2 adapter for managed media (SD/eMMC/UFS/USB/NVMe/SATA), examples and validation.
+- **[⏱️ DOCS/rtos-integration.md](DOCS/rtos-integration.md)** — RTOS and silicon platforms: generic RTOS port, native adapters (FreeRTOS/Zephyr/ThreadX), porting template and hook points (Silicon Labs, TI, Infineon, Renesas).
+- **[⚠️ DOCS/known-limitations.md](DOCS/known-limitations.md)** — Current limits and deviations from the spec.
+- **[🧪 DOCS/testing.md](DOCS/testing.md)** — Verification steps and required privileges.
+- **[🤝 CONTRIBUTING.md](CONTRIBUTING.md)** — How to propose improvements, report deviations from the spec and submit KATs.
+- **[🔧 tools/](tools/)** — `mfstool`: manifest generator, HCT trace analyzer, MFS-Bench v2 bench, formal matcher.
 
 ---
 
-## 📣 Notificar mejoras, errores y desviaciones
+## 📣 Report improvements, bugs and deviations
 
-El desarrollo de **MatrixFS** sigue un proceso abierto y trazable. Cualquier mejora propuesta pasa por revisión contra las reglas normativas MFS-* antes de merge.
+**MatrixFS** development follows an open and traceable process. Any proposed improvement goes through review against the MFS-* normative rules before merge.
 
-| Tipo | Canal | Plantilla / campos obligatorios |
+| Type | Channel | Template / required fields |
 |:---|:---|:---|
-| 🐛 **Bug / corrupción** | [GitHub Issues → Bug report](/issues/new?labels=bug) | Reproducción con vFlash, secuencia de operaciones, punto de corte, logs HCT exportados |
-| 💡 **Mejora / feature** | [GitHub Issues → Enhancement](/issues/new?labels=enhancement) | Sección(s) de MFS-SPEC-003 afectadas, impacto en RSC/pila/WCET, KPI MFS-Bench esperado |
-| 📏 **Desviación vs. spec** | Issue con etiqueta `spec-deviation` | ID de regla (p. ej. `MFS-VIA-002`), comportamiento observado vs. normativo |
-| 🔐 **Vulnerabilidad de seguridad** | **NO abrir issue público** — escribir a `security@matrixfs.example` | CVSS preliminar, suite/media afectados, PoC confidencial |
-| 📝 **Mejora de documentación** | PR directo o issue `documentation` | Enlace a sección y texto propuesto |
+| 🐛 **Bug / corruption** | [GitHub Issues → Bug report](/issues/new?labels=bug) | Reproduction with vFlash, operation sequence, cut point, exported HCT logs |
+| 💡 **Improvement / feature** | [GitHub Issues → Enhancement](/issues/new?labels=enhancement) | Affected MFS-SPEC-003 section(s), impact on RSC/stack/WCET, expected MFS-Bench KPI |
+| 📏 **Deviation vs. spec** | Issue with `spec-deviation` label | Rule ID (e.g. `MFS-VIA-002`), observed vs. normative behavior |
+| 🔐 **Security vulnerability** | **Do NOT open a public issue** — write to `security@matrixfs.example` | Preliminary CVSS, affected suite/media, confidential PoC |
+| 📝 **Documentation improvement** | Direct PR or `documentation` issue | Link to section and proposed text |
 
-**Política de triage:** issues etiquetados en ≤ 3 días hábiles · blocker de corrupción = prioridad P0 con análisis forense obligatorio · toda mejora aceptada se registra en [📋 CHANGELOG.md](CHANGELOG.md) con referencia a la sección de la especificación. Las contribuciones externas se aceptan bajo Apache 2.0 (ver §5 del LICENSE) y deben incluir DCO sign-off (`git commit -s`).
+**Triage policy:** issues labeled in ≤ 3 business days · corruption blocker = P0 priority with mandatory forensic analysis · every accepted improvement is recorded in [📋 CHANGELOG.md](CHANGELOG.md) with a reference to the specification section. External contributions are accepted under Apache 2.0 (see §5 of the LICENSE) and must include DCO sign-off (`git commit -s`).
 
 ---
 
-## ⚖️ Licencia
+## ⚖️ License
 
-Distribuido bajo **Apache License 2.0** — ver [LICENSE](LICENSE).
+Distributed under the **Apache License 2.0** — see [LICENSE](LICENSE).
 
-**¿Por qué Apache 2.0?** MatrixFS apunta a producto industrial (automoción, médico, infraestructura crítica). Apache 2.0:
+**Why Apache 2.0?** MatrixFS targets industrial product (automotive, medical, critical infrastructure). Apache 2.0:
 
-1. **Permite uso comercial y cierre propietario** — integradores pueden usarlo en firmware de producción sin copyleft, lo que favorece adopción en sectores regulados.
-2. **Otorga licencia de patentes expresa** de cada contribuyente (§3) — esencial dado que la especificación define técnicas susceptibles de patente (GC adaptativo por deuda, contadores termométricos, drenaje EDP multi-nivel, bandit determinista EXP3).
-3. **Exige conservar atribución y notices** (§4) y marcar archivos modificados (§4b) — mantiene auditables las derivaciones frente a la spec MFS-SPEC-003.
-4. **Sin garantía** (§7–8) — coherente con la naturaleza de referencia normativa del proyecto: cualquier certificación SIL-2/ISO 26262 exige validación propia del integrador.
+1. **Allows commercial use and proprietary closing** — integrators can use it in production firmware without copyleft, which favors adoption in regulated sectors.
+2. **Grants an express patent license** from each contributor (§3) — essential given that the specification defines techniques susceptible to patent (adaptive GC by debt, thermometric counters, multi-level EDP draining, deterministic bandit EXP3).
+3. **Requires preserving attribution and notices** (§4) and marking modified files (§4b) — keeps derivations auditable against the MFS-SPEC-003 spec.
+4. **No warranty** (§7–8) — consistent with the project's normative reference nature: any SIL-2/ISO 26262 certification requires the integrator's own validation.
 
-Los documentos de especificación en `DOCS/` comparten la misma licencia. Las marcas «MatrixFS», «ATLAS» y «MFS-Bench» no se conceden con la licencia (§6).
+The specification documents in `DOCS/` share the same license. The «MatrixFS», «ATLAS» and «MFS-Bench» trademarks are not granted with the license (§6).
 
 © 2026 The MatrixFS contributors.
 
@@ -688,13 +682,13 @@ Los documentos de especificación en `DOCS/` comparten la misma licencia. Las ma
 
 <div align="center">
 
-**MatrixFS «ATLAS»** — *donde cada promesa es un artefacto auditable.*
+**MatrixFS «ATLAS»** — *where every promise is an auditable artifact.*
 
-[⬆ Volver arriba](#-matrixfs-atlas) · [📋 Índice](#-índice)
+[⬆ Back to top](#-matrixfs-atlas) · [📋 Table of Contents](#-table-of-contents)
 
 </div>
 
-<!-- ==================== Definiciones de badges (reference-style) ==================== -->
+<!-- ==================== Badge definitions (reference-style) ==================== -->
 [badge-license]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [badge-c11]: https://img.shields.io/badge/C%20Standard-C11-blue
 [badge-heap]: https://img.shields.io/badge/heap-ZERO-brightgreen
