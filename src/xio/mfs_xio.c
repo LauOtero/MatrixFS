@@ -30,7 +30,7 @@ mfs_st mfs_xdam_map(mf_t *fs, uint32_t asset, uint32_t flash_addr,
   if (!(fs->hwv.flags1 & MFS_HWV1_BYTE_ADDR) && !fs->cfg->drv->read)
     return MFS_EHW_UNSUPPORTED; /* XIP requiere lectura directa */
   /* CRC de referencia del activo (una única lectura de alta coste al mapear) */
-  static uint8_t buf[MFS_CHUNK_EXTENDED];
+  static uint8_t buf[MFS_SCRATCH_MAX];
   uint32_t done = 0u, crc = 0u;
   while (done < len) {
     uint32_t take = len - done;
@@ -70,7 +70,7 @@ mfs_st mfs_xdam_read(mf_t *fs, uint32_t asset, uint32_t off, void *dst,
   e->samples++;
   /* verificación E2G por muestreo (política 1/n, auditable en HCT) */
   if ((e->samples % XDAM_SAMPLE_EVERY) == 0u) {
-    static uint8_t buf[MFS_CHUNK_EXTENDED];
+    static uint8_t buf[MFS_SCRATCH_MAX];
     uint32_t crc = 0u, done = 0u;
     while (done < e->len) {
       uint32_t take = e->len - done;
@@ -103,9 +103,13 @@ void mfs_xdam_epoch_bump(mf_t *fs) {
 }
 
 /* ================================= SDP =================================== */
+#if MFS_IS_8BIT_TARGET
+#define SDP_POOL 2u
+#else
 #define SDP_POOL 4u
+#endif
 
-static uint8_t sdp_pool[SDP_POOL][MFS_CHUNK_EXTENDED];
+static uint8_t sdp_pool[SDP_POOL][MFS_SCRATCH_MAX];
 static uint16_t sdp_len[SDP_POOL];
 static uint32_t sdp_crc[SDP_POOL];
 static uint8_t sdp_head, sdp_tail;

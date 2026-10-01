@@ -232,7 +232,7 @@ uint16_t mfs_fsst_decode(const uint8_t *in, uint16_t ilen, uint8_t *out,
 void mfs_srb_attach(mf_t *fs) {
   /* el SRB es la única ventana de trabajo: apunta al overlay del modo o
    * a un buffer estático de chunk_size (Ultra-Nano/Nano usan .bss propia) */
-  static uint8_t srb_static[MFS_CHUNK_EXTENDED];
+  static uint8_t srb_static[MFS_SCRATCH_MAX];
   fs->srb = fs->ovl[0] ? (uint8_t *)fs->ovl[0] : srb_static;
   uint32_t sz = mfs_page_bytes(fs);
   if (fs->cfg->ovl_sizes[0] && fs->cfg->ovl_sizes[0] < sz)
@@ -304,7 +304,7 @@ static int data_alloc_zone(mf_t *fs, uint8_t hotness) {
  * flags de cabecera: bit0=lz4, bit1=fsst, bit2=shared (dedup) */
 mfs_st mfs_data_write(mf_t *fs, uint32_t lba, const uint8_t *pl, uint16_t len,
                       uint8_t hotness, uint8_t kind, uint32_t *ppage_out) {
-  static uint8_t work[MFS_CHUNK_EXTENDED];
+  static uint8_t work[MFS_SCRATCH_MAX];
   uint16_t wlen = len;
   uint8_t f = 0u;
   uint32_t pb = mfs_page_bytes(fs);
@@ -312,7 +312,7 @@ mfs_st mfs_data_write(mf_t *fs, uint32_t lba, const uint8_t *pl, uint16_t len,
   memcpy(work, pl, len);
 
   /* compresión (skip en Ultra-Nano: presupuesto §18.2) */
-  if (fs->mode > MFS_MODE_ULTRA_NANO && fs->srb) {
+  if (fs->mode != MFS_MODE_ULTRA_NANO && fs->srb) {
     uint16_t c = mfs_lz4_compress(work, wlen, fs->srb, fs->srb_size);
     if (c > 0u && (uint32_t)c + hs <= pb) {
       memcpy(work, fs->srb, c);
@@ -321,7 +321,8 @@ mfs_st mfs_data_write(mf_t *fs, uint32_t lba, const uint8_t *pl, uint16_t len,
     }
   }
   /* dedup convergente (Balanced+, opt-in) */
-  if (fs->cfg->allow_convergent && fs->mode >= MFS_MODE_BALANCED) {
+  if (fs->cfg->allow_convergent &&
+      mfs_mode_classic_ge(fs->mode, MFS_MODE_BALANCED)) {
     uint8_t h32[32];
     mfs_b3_256(NULL, 0u, work, wlen, h32);
     uint64_t h64 = mfs_ld64(h32);
@@ -359,7 +360,7 @@ mfs_st mfs_data_read(mf_t *fs, uint32_t ppage, uint32_t lba, uint8_t *buf,
                      uint16_t bufsize, uint16_t *rlen) {
   uint8_t kind, gen, snap, dict = 0u;
   uint16_t r = 0;
-  static uint8_t tmp[MFS_CHUNK_EXTENDED];
+  static uint8_t tmp[MFS_SCRATCH_MAX];
   mfs_st st = mfs_rec_read(fs, ppage, lba, 0xFFu, &kind, &gen, &snap, &dict,
                            tmp, (uint16_t)sizeof(tmp), &r);
   if (st != MFS_OK)

@@ -30,8 +30,9 @@ mfs_st mfs_hmt_init(mf_t *fs) {
     return MFS_ENOTSUP;
   /* Presupuesto T0 (§11.11): Balanced+ exige ≥ 32 KB; si no, degradar con
    * evento y seguir en mono-medio (nunca degradación silenciosa). */
-  uint32_t need = (fs->mode >= MFS_MODE_BALANCED) ? MFS_HMT_T0_BUDGET
-                                                  : (MFS_HMT_T0_BUDGET / 4u);
+  uint32_t need = mfs_mode_classic_ge(fs->mode, MFS_MODE_BALANCED)
+                      ? MFS_HMT_T0_BUDGET
+                      : (MFS_HMT_T0_BUDGET / 4u);
   if (fs->hwv.t0_size < need) {
     mfs_hct_event(fs, MFS_EV_HMT, 0x8000u | (fs->hwv.t0_size & 0x7FFFu));
     return MFS_ENOTVIABLE;
@@ -123,7 +124,7 @@ mfs_st mfs_hmt_scan(mf_t *fs) {
     if (off + HMT_HDR + len > budget)
       break;
     uint32_t crc = mfs_ld32(hdr + 14);
-    static uint8_t pl[MFS_CHUNK_EXTENDED];
+    static uint8_t pl[MFS_SCRATCH_MAX];
     if (len > sizeof(pl))
       break;
     if (len && mfs_t0_read(fs, off + HMT_HDR, pl, len) != MFS_OK)
@@ -163,7 +164,7 @@ mfs_st mfs_hmt_scan(mf_t *fs) {
     if (mfs_t0_read(fs, keys[i].off, hdr, HMT_HDR) != MFS_OK)
       continue;
     uint16_t len = mfs_ld16(hdr + 12);
-    static uint8_t pl[MFS_CHUNK_EXTENDED];
+    static uint8_t pl[MFS_SCRATCH_MAX];
     if (len > sizeof(pl))
       continue;
     if (len && mfs_t0_read(fs, keys[i].off + HMT_HDR, pl, len) != MFS_OK)

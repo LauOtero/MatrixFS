@@ -121,7 +121,8 @@ bool mfs_slec_enabled(mf_t *fs) {
   bool mlc = (t == MFS_MEDIA_NAND_RAW || t == MFS_MEDIA_NAND_ONFI ||
               t == MFS_MEDIA_ZNS_NAND);
   /* sólo con NAND multinivel y sin T0 (con FRAM/MRAM no hace falta) */
-  return mlc && !mfs_has_t0(fs) && (fs->mode >= MFS_MODE_COMPACT);
+  return mlc && !mfs_has_t0(fs) &&
+         mfs_mode_classic_ge(fs->mode, MFS_MODE_COMPACT);
 }
 
 mfs_st mfs_slec_enter(mf_t *fs, uint32_t zone) {
@@ -435,7 +436,7 @@ void mfs_wep_init(mf_t *fs, const uint8_t uid[8]) {
     fs->wep_k1 = 0x1111u;
   if (fs->wep_k2 == 0u)
     fs->wep_k2 = 0x2222u;
-  fs->wep_cache_valid = (fs->mode >= MFS_MODE_BALANCED);
+  fs->wep_cache_valid = mfs_mode_classic_ge(fs->mode, MFS_MODE_BALANCED);
   fs->wep_rr = 0u;
   memset(fs->wep_cache, 0, sizeof(fs->wep_cache));
 }
@@ -493,11 +494,11 @@ mfs_st mfs_zrp_encode(mf_t *fs, mfs_zone_t *z) {
     return MFS_ENOTSUP; /* 16 datos + paridad */
   mfs_gf_init();
   uint32_t pb = mfs_page_bytes(fs);
-  static uint8_t parity[MFS_CHUNK_EXTENDED];
+  static uint8_t parity[MFS_SCRATCH_MAX];
   memset(parity, 0, pb);
   uint8_t alpha = 1u;
   for (uint32_t p = 0; p < 16u; p++) {
-    static uint8_t page[MFS_CHUNK_EXTENDED];
+    static uint8_t page[MFS_SCRATCH_MAX];
     mfs_st st =
         mfs_read(fs, z->start_addr + MFS_ZONEHDR_SIZE + p * pb, page, pb);
     if (st != MFS_OK)
@@ -530,9 +531,9 @@ mfs_st mfs_zrp_recover(mf_t *fs, mfs_zone_t *z, uint32_t idx,
     return MFS_EINVAL;
   mfs_gf_init();
   uint32_t pb = mfs_page_bytes(fs);
-  static uint8_t parity[MFS_CHUNK_EXTENDED];
-  static uint8_t page[MFS_CHUNK_EXTENDED];
-  static uint8_t acc[MFS_CHUNK_EXTENDED];
+  static uint8_t parity[MFS_SCRATCH_MAX];
+  static uint8_t page[MFS_SCRATCH_MAX];
+  static uint8_t acc[MFS_SCRATCH_MAX];
   mfs_st st =
       mfs_read(fs, z->start_addr + MFS_ZONEHDR_SIZE + 16u * pb, parity, pb);
   if (st != MFS_OK)
@@ -605,8 +606,8 @@ int mfs_gc_select_victim_ftl(mf_t *fs, uint32_t *elm_out, uint32_t *pep_out) {
       rul_n++;
     }
     /* PEP sólo en RT-C sin rt_strict (§11.1) */
-    if (fs->mode >= MFS_MODE_EXTENDED && !fs->cfg->rt_strict &&
-        fs->edp_level == 0u) {
+    if (mfs_mode_classic_ge(fs->mode, MFS_MODE_EXTENDED) &&
+        !fs->cfg->rt_strict && fs->edp_level == 0u) {
       uint16_t feat[MFS_PEP_FEATURES];
       memset(feat, 0, sizeof(feat));
       feat[0] = (uint16_t)(pe & 0xFFu);

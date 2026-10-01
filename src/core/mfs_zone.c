@@ -452,7 +452,7 @@ mfs_st mfs_rec_write(mf_t *fs, uint32_t zone, uint32_t lba, uint8_t kind,
     mfs_zone_seal(fs, zone);
     return MFS_ENOSPC;
   }
-  static uint8_t buf[MFS_CHUNK_EXTENDED];
+  static uint8_t buf[MFS_SCRATCH_MAX];
   memset(buf, 0xFFu, pb);
   build_hdr(buf, hs, kind, 0u, dictid, lba, gen, snapid, hotness, z->zrp != 0u,
             plen);
@@ -527,7 +527,7 @@ mfs_st mfs_rec_read(mf_t *fs, uint32_t ppage, uint32_t expect_lba,
   uint16_t hs = mfs_e2g_hdr(fs);
   uint32_t pb = mfs_page_bytes(fs);
   uint32_t addr = z->start_addr + MFS_ZONEHDR_SIZE + idx * pb;
-  static uint8_t tmp[MFS_CHUNK_EXTENDED];
+  static uint8_t tmp[MFS_SCRATCH_MAX];
   if (pb > sizeof(tmp))
     return MFS_EINVAL;
   mfs_st st = mfs_read(fs, addr, tmp, pb);
@@ -706,7 +706,7 @@ mfs_st mfs_gc_slice(mf_t *fs, uint32_t budget_us) {
   mfs_zone_t *z = &fs->zones[v];
   uint32_t pb = mfs_page_bytes(fs);
   uint16_t hs = mfs_e2g_hdr(fs);
-  static uint8_t payload[MFS_CHUNK_EXTENDED];
+  static uint8_t payload[MFS_SCRATCH_MAX];
   mfs_st ret = MFS_OK;
   g_gc_victim = (uint32_t)v;
   for (uint32_t off = MFS_ZONEHDR_SIZE; off + pb <= z->write_ptr; off += pb) {

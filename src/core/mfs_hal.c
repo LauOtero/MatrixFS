@@ -77,7 +77,10 @@ mfs_st mfs_hal_detect(mf_t *fs, const mfs_config *cfg, mfs_hwv_t *out) {
   out->magic[1] = 'H';
   out->magic[2] = 'W';
   out->magic[3] = 'V';
-  out->arch_class = cfg->arch_class; /* 0 ⇒ MFS_EARCH (§24.2 p2) */
+  /* arch_class: 0=8-bit, 1=16-bit, 2=32-bit (MFS-ARCH-010 rev.2). Se copia tal
+   * cual: el integrador DEBE declararlo explícitamente (no hay valor "auto").
+   */
+  out->arch_class = cfg->arch_class;
   out->mode_forced = (cfg->forced_mode == MFS_MODE_UNSUPPORTED)
                          ? 0xFFu
                          : (uint8_t)cfg->forced_mode;
@@ -166,6 +169,15 @@ mfs_mode_t mfs_select_mode(const mfs_hwv_t *hwv, const mfs_config *cfg) {
     return MFS_MODE_UNSUPPORTED; /* ENOTVIABLE */
   uint32_t avail = total - fw - stk - peri - marg;
 
+  /* En arquitectura 8-bit, preferir modos 8-bit dedicados */
+  bool is_8bit = (hwv->arch_class == 0u);
+  if (is_8bit) {
+    for (int m = MFS_MODE_8BIT_COMPACT; m >= MFS_MODE_8BIT_ULTRA; m--) {
+      if (avail >= mfs_limits[m].ram_total)
+        return (mfs_mode_t)m;
+    }
+    /* Si no cabe ningún modo 8-bit, intentar Ultra-Nano como fallback */
+  }
   for (int m = MFS_MODE_EXTENDED; m >= MFS_MODE_ULTRA_NANO; m--) {
     if (avail >= mfs_limits[m].ram_total)
       return (mfs_mode_t)m;
@@ -185,8 +197,9 @@ bool mfs_edp_capable(mf_t *fs) {
 
 uint8_t mfs_negotiate_suite(const mfs_hwv_t *hwv, const mfs_config *cfg,
                             mfs_mode_t mode) {
-  if (mode == MFS_MODE_ULTRA_NANO)
-    return (uint8_t)MFS_SUITE_NONE; /* sin suites */
+  /* 8-bit modes y Ultra-Nano: sin suites pesadas */
+  if (mode == MFS_MODE_ULTRA_NANO || mfs_mode_is_8bit(mode))
+    return (uint8_t)MFS_SUITE_NONE; /* sin suites AEAD en 8-bit / ultra-nano */
   if (cfg->key == NULL)
     return (uint8_t)MFS_SUITE_NONE;
   bool crypto_hw = (hwv->flags3 & MFS_HWV3_CRYPTO_HW) != 0u;
@@ -199,6 +212,10 @@ uint8_t mfs_negotiate_suite(const mfs_hwv_t *hwv, const mfs_config *cfg,
       return (uint8_t)MFS_SUITE_S3;
     }
     if (want == MFS_SUITE_S2 && !ascon_hw && !b3_hw)
+      return (uint8_t)MFS_SUITE_S3;
+    /* En 8-bit, S0/S1 no están disponibles por overhead */
+    if (mfs_mode_is_8bit(mode) &&
+        (want == MFS_SUITE_S0 || want == MFS_SUITE_S1))
       return (uint8_t)MFS_SUITE_S3;
     return want;
   }

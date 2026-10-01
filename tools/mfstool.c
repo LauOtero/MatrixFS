@@ -36,7 +36,12 @@ static const uint8_t RSC_BUILD_KEY[32] = {
     0x53u, 0x2Du, 0x30u, 0x31u, 0x2Du, 0x31u, 0x2Eu, 0x30u, 0x00u, 0x01u};
 
 static const char *const MODE_NAMES[MFS_MODE_COUNT] = {
-    "Ultra-Nano", "Nano", "Compact", "Balanced", "Extended"};
+    "Ultra-Nano", "Nano", "Compact", "Balanced", "Extended", "8U", "8N", "8C"};
+
+/* Sufijo del macro MFS_RAM_<sufijo> por modo (coincide con mfs_types.h) */
+static const char *const MODE_MACROS[MFS_MODE_COUNT] = {
+    "ULTRA_NANO", "NANO",       "COMPACT",   "BALANCED",
+    "EXTENDED",   "8BIT_ULTRA", "8BIT_NANO", "8BIT_COMPACT"};
 
 /* =====================================================================
  * plan — certificado de recursos estáticos (§7.1, §23.2, §26)
@@ -69,12 +74,7 @@ static int cmd_plan(void) {
              "_Static_assert(c, m)\n#endif\n\n");
   fprintf(h, "/* Presupuesto RAM normativo por modo (§18.2) */\n");
   for (int m = 0; m < (int)MFS_MODE_COUNT; m++) {
-    fprintf(h, "#define MFS_RAM_%s %uu\n",
-            (m == 0)   ? "ULTRA_NANO"
-            : (m == 1) ? "NANO"
-            : (m == 2) ? "COMPACT"
-            : (m == 3) ? "BALANCED"
-                       : "EXTENDED",
+    fprintf(h, "#define MFS_RAM_%s %uu\n", MODE_MACROS[m],
             (unsigned)mfs_limits[m].ram_total);
   }
   fprintf(h, "\n/* Huella real del núcleo (MFS-RES-001: sin heap) */\n");

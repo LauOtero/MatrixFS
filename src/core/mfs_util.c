@@ -12,7 +12,13 @@ const mfs_limits_t mfs_limits[MFS_MODE_COUNT] = {
     /* Balanced   */
     {16, 256, 8, 4, 8, 1048576u, 524288u, MFS_RAM_BALANCED, 512u, 4096u},
     /* Extended   */
-    {32, 256, 64, 4, 16, 4194304u, 524288u, MFS_RAM_EXTENDED, 1024u, 4096u}};
+    {32, 256, 64, 4, 16, 4194304u, 524288u, MFS_RAM_EXTENDED, 1024u, 4096u},
+    /* 8-bit Ultra (≤512B): minimal, solo CRC, 1 archivo, sin snapshots */
+    {1, 32, 0, 1, 1, 64u, 1024u, MFS_RAM_8BIT_ULTRA, 32u, 64u},
+    /* 8-bit Nano (≤1KB): + Blake3/CRC, 2 archivos, 1 snapshot */
+    {2, 64, 1, 2, 2, 256u, 4096u, MFS_RAM_8BIT_NANO, 48u, 128u},
+    /* 8-bit Compact (≤2KB): + Ascon opcional, 4 archivos, 2 snapshots */
+    {4, 128, 2, 3, 4, 1024u, 16384u, MFS_RAM_8BIT_COMPACT, 64u, 256u}};
 
 const char *mfs_ststr(mfs_st st) {
   switch (st) {
@@ -80,7 +86,31 @@ const char *mfs_ststr(mfs_st st) {
 }
 
 /* CRC-32C (Castagnoli, polinomio 0x1EDC6F41 reflejado 0x82F63B78).
- * KAT (§27.1): CRC32C("123456789") == 0xE3069283 */
+ * KAT (§27.1): CRC32C("123456789") == 0xE3069283
+ *
+ * Dos implementaciones con resultado idéntico bit a bit:
+ *   - Host / 16-32 bit: tabla completa de 256 entradas (1 KiB en .bss).
+ *   - 8-bit: tabla de nibble de 16 entradas (64 B en .rodata), que preserva
+ *     1 KiB de RAM a costa de ~2x CPU. Mismo polinomio y mismo valor final. */
+#if MFS_IS_8BIT_TARGET
+/* Tabla de nibble: 16 entradas, índice = nibble (4 bits). En .rodata (flash).
+ */
+static const uint32_t crc32c_nib[16] = {
+    0x00000000u, 0x105EC76Fu, 0x20BD8EDEu, 0x30E349B1u,
+    0x417B1DBCu, 0x5125DAD3u, 0x61C69362u, 0x7198540Du,
+    0x82F63B78u, 0x92A8FC17u, 0xA24BB5A6u, 0xB21572C9u,
+    0xC38D26C4u, 0xD3D3E1ABu, 0xE330A81Au, 0xF36E6F75u};
+
+uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
+  uint32_t c = ~seed;
+  for (uint32_t i = 0; i < len; i++) {
+    c ^= buf[i];
+    c = (c >> 4) ^ crc32c_nib[c & 0x0Fu];
+    c = (c >> 4) ^ crc32c_nib[c & 0x0Fu];
+  }
+  return ~c;
+}
+#else  /* !MFS_IS_8BIT_TARGET: tabla completa en RAM */
 static uint32_t crc32c_table[256];
 static bool crc32c_ready;
 
@@ -104,6 +134,7 @@ uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
   }
   return ~c;
 }
+#endif /* MFS_IS_8BIT_TARGET */
 
 /* HWV serialización on-flash (§5.2) — accesores LE exclusivos (§20.4) */
 void mfs_hwv_serialize(const mfs_hwv_t *h, uint8_t out[64]) {
@@ -171,9 +202,8 @@ mfs_st mfs_hwv_validate(const mfs_hwv_t *h) {
       h->magic[3] != 'V') {
     return MFS_ECORRUPT;
   }
-  /* MFS-ARCH-010: arch_class 0 ⇒ rechazo explícito (§24.2 paso 2) */
-  if (h->arch_class == 0u)
-    return MFS_EARCH;
+  /* MFS-ARCH-010 rev.2: arch_class 0=8-bit (permitido con
+   * MFS_ALLOW_8BIT_TARGET), 1=16-bit, 2=32-bit; >2 ⇒ rechazo */
   if (h->arch_class > 2u)
     return MFS_EARCH;
   /* Verificación de integridad: recomputar CRC sobre la representación

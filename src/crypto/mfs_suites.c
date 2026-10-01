@@ -635,7 +635,7 @@ mfs_st mfs_suite_seal(uint8_t suite, const uint8_t key[32],
     aes_ctr_xor(key, ctr_nonce, in, len, out);
     /* EtM: MAC sobre nonce‖ciphertext (el nonce queda autenticado, MFS-SEC-005)
      */
-    uint8_t macin[MFS_CHUNK_EXTENDED + 16u];
+    uint8_t macin[MFS_SCRATCH_MAX + 16u];
     if ((uint32_t)len + 16u > sizeof(macin))
       return MFS_EINVAL;
     memcpy(macin, nonce, 16u);
@@ -698,7 +698,7 @@ mfs_st mfs_suite_open(uint8_t suite, const uint8_t key[32],
     uint8_t want[32]; /* HMAC completo; se comparan 16 B */
     uint8_t ctr_nonce[12];
     memcpy(ctr_nonce, nonce, 12);
-    uint8_t macin[MFS_CHUNK_EXTENDED + 16u];
+    uint8_t macin[MFS_SCRATCH_MAX + 16u];
     if ((uint32_t)len + 16u > sizeof(macin))
       return MFS_EINVAL;
     memcpy(macin, nonce, 16u);

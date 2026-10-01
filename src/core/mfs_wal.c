@@ -67,7 +67,7 @@ mfs_st mfs_wal_append(mf_t *fs, uint32_t lba, uint8_t kind, const uint8_t *pl,
     fs->zone_wal = (uint32_t)z;
   }
 
-  static uint8_t rec[MFS_CHUNK_EXTENDED];
+  static uint8_t rec[MFS_SCRATCH_MAX];
   mfs_st32(rec, fs->txid_cur);
   mfs_st32(rec + 4, lba);
   mfs_st16(rec + 8, len);

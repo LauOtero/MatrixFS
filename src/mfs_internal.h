@@ -59,7 +59,31 @@ static inline uint32_t mfs_zone_base(const mfs_hwv_t *h) {
 #define MFS_TOK_MAGIC_HI ((uint8_t)((MFS_TOK_MAGIC >> 8) & 0xFFu))
 #define MFS_TOK_MAGIC_LO ((uint8_t)(MFS_TOK_MAGIC & 0xFFu))
 
-/* Límites internos fijos (dimensionado estático, MFS-RES-001) */
+/* Límites internos fijos (dimensionado estático, MFS-RES-001).
+ *
+ * Se dimensionan según la familia de objetivo: un build para MCU de 8 bits
+ * (MFS_ALLOW_8BIT_TARGET ⇒ MFS_IS_8BIT_TARGET) usa pools y scratch mínimos
+ * para caber en el presupuesto de RAM (§18.2, modo 8-bit ≤ 2 KB), a costa de
+ * un volumen/ventana más pequeños. El build de 16/32 bits mantiene los valores
+ * normativos completos. */
+#if MFS_IS_8BIT_TARGET
+#define MFS_MAX_FILES_OPEN 2u /* ficheros simultáneos   */
+#define MFS_MAX_SNAPS 2u      /* snapshots O(1)         */
+#define MFS_MAX_IOCB 2u       /* ring iocb              */
+#define MFS_MAX_ZONES 16u     /* tabla de zonas en RAM  */
+#define MFS_MAX_BLOCKS 32u    /* geometría por modo     */
+#define MFS_DIR_DEPTH 3u
+#define MFS_NAME_MAX 16u
+#define MFS_PATH_MAX 48u
+#define MFS_WAL_WINDOW_MAX 16u /* §25 W: mínimo del rango 32..256 */
+#define MFS_SAVEPOINT_DEPTH 1u /* §9.6                   */
+#define MFS_GL_DLIST_MAX 4u    /* AGCB+ dirty-list §25   */
+#define MFS_CUSUM_RING 4u
+/* Scratch de una página lógica: cubre el mayor chunk 8-bit (256 B). */
+#define MFS_SCRATCH_MAX MFS_CHUNK_8BIT_COMPACT
+/* Ventana de inodos residentes (ficheros abiertos + directorios en curso) */
+#define MFS_INODE_WINDOW 4u
+#else
 #define MFS_MAX_FILES_OPEN 32u     /* Extended (§18.2)      */
 #define MFS_MAX_SNAPS 64u          /* Extended              */
 #define MFS_MAX_IOCB 16u           /* ring iocb Extended    */
@@ -72,13 +96,24 @@ static inline uint32_t mfs_zone_base(const mfs_hwv_t *h) {
 #define MFS_SAVEPOINT_DEPTH 4u  /* §9.6                  */
 #define MFS_GL_DLIST_MAX 32u    /* AGCB+ dirty-list §25  */
 #define MFS_CUSUM_RING 16u
+#define MFS_SCRATCH_MAX MFS_CHUNK_EXTENDED
+#define MFS_INODE_WINDOW (MFS_MAX_FILES_OPEN + 16u)
+#endif
 
 /* ==== Fase 3–5: FTL Ultra 2, HMT, PQ, XDAM/SDP/CQE ==== */
+#if MFS_IS_8BIT_TARGET
+#define WOM_MAX_LANE 256u /* bytes de lane WOM-p (§11.4) */
+#define MFS_PEP_FEATURES 32u
+#define MFS_WEP_CACHE 1u
+#define MFS_EBA_MAX_REGIONS 2u
+#define MFS_TG_MAX_READS 2u
+#else
 #define WOM_MAX_LANE 4096u /* bytes de lane WOM-p (§11.4) */
 #define MFS_PEP_FEATURES 32u
 #define MFS_WEP_CACHE 16u
 #define MFS_EBA_MAX_REGIONS 16u
 #define MFS_TG_MAX_READS 4u
+#endif
 
 /* EBA (§11.8) */
 typedef enum {
@@ -113,7 +148,11 @@ typedef struct {
 #define MFS_HMT_T0_BUDGET 32768u /* mínimo para Balanced (§11.11) */
 
 /* XDAM (§14.1) */
+#if MFS_IS_8BIT_TARGET
+#define MFS_XDAM_MAX 1u
+#else
 #define MFS_XDAM_MAX 8u
+#endif
 typedef struct {
   uint32_t flash_addr;
   uint32_t len;
@@ -124,11 +163,20 @@ typedef struct {
 } mfs_xdam_ent_t;
 
 /* CQE (§11.5) */
+#if MFS_IS_8BIT_TARGET
+#define MFS_CQE_MAX 2u
+#else
 #define MFS_CQE_MAX 16u
+#endif
 
 /* PUF (§15) */
+#if MFS_IS_8BIT_TARGET
+#define MFS_PUF_HELPER 32u
+#define MFS_PUF_SALT 8u
+#else
 #define MFS_PUF_HELPER 64u
 #define MFS_PUF_SALT 16u
+#endif
 
 /* Tipos de registro (§8.2 meta: tipo 4 bits) */
 enum {
@@ -173,7 +221,11 @@ typedef struct {
 } mfs_extent_t;
 
 /* ==== Inodo en RAM ==== */
+#if MFS_IS_8BIT_TARGET
+#define MFS_EXT_INLINE 2u
+#else
 #define MFS_EXT_INLINE 4u
+#endif
 typedef struct {
   uint32_t ino;
   uint32_t size;
@@ -264,7 +316,7 @@ struct mfs_fs {
   bool tx_open;
   uint8_t sp_depth;
   /* tablas estáticas (pools, sin heap) */
-  mfs_inode_ram_t inos[MFS_MAX_FILES_OPEN + 16u]; /* ventana flash-first */
+  mfs_inode_ram_t inos[MFS_INODE_WINDOW]; /* ventana flash-first */
   mfs_zone_t zones[MFS_MAX_ZONES];
   mfs_file *open_files[MFS_MAX_FILES_OPEN];
   mfs_snap_id snaps[MFS_MAX_SNAPS];

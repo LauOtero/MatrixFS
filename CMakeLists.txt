@@ -62,3 +62,18 @@ target_include_directories(mfsctl PRIVATE
 
 enable_testing()
 add_test(NAME matrixfs_suite COMMAND mfs_tests)
+
+# --- Capa de soporte para MCU de 8 bits (opcional) ---
+# Puerto (AVR/8051/STM8/PIC16-18/Z80/genérico), drivers L2 (NOR/FRAM/EEPROM/
+# flash interna/SD-SPI) y auto-detección de capacidades. Para cross-compilar a
+# un MCU de 8 bits, definir MFS_ALLOW_8BIT_TARGET=1 en el toolchain (véase
+# include/matrixfs/mfs_types.h, MFS-ARCH-010 rev.2).
+option(MATRIXFS_BUILD_8BIT "Compila la capa de soporte para MCU de 8 bits" OFF)
+if (MATRIXFS_BUILD_8BIT)
+  add_library(matrixfs_8bit STATIC
+    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_port_8bit.c
+    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_l2_8bit.c
+    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_detect_8bit.c)
+  target_include_directories(matrixfs_8bit PUBLIC
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/platform/8bit)
+endif()

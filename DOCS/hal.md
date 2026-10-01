@@ -167,3 +167,62 @@ mfs_mode_t m = mf_last_selected();    /* último modo elegido */
 `mfstool verify-hwv <imagen>` valida el HWV de un volumen ya formateado
 (magic + CRC-32C + arquitectura) sin montarlo; véase
 [`tooling.md`](tooling.md).
+
+## Soporte de MCU de 8 bits (MFS-ARCH-010 rev. 2)
+
+La revisión 2 de MFS-ARCH-010 **admite** arquitecturas de 8 bits como clase
+válida (`arch_class == 0`), además de 16 bits (1) y 32 bits (2). Sólo se rechaza
+una clase desconocida (`> 2`) con `MFS_EARCH`. Un volumen formateado en un MCU
+de 8 bits es por tanto montable en cualquier otra plataforma (portabilidad).
+
+**Selección de modo** (`mfs_select_mode`): si `arch_class == 0`, el selector
+prefiere la familia 8-bit antes que los modos clásicos:
+
+| Modo 8-bit | RAM | Chunk | Pila propia | Ficheros | Snapshots |
+|---|---|---|---|---|---|
+| `MFS_MODE_8BIT_ULTRA` | 512 B | 64 B | 32 B | 1 | 0 |
+| `MFS_MODE_8BIT_NANO` | 1 KB | 128 B | 48 B | 2 | 1 |
+| `MFS_MODE_8BIT_COMPACT` | 2 KB | 256 B | 64 B | 4 | 2 |
+
+Los modos 8-bit forman una **familia independiente**: su numeración en
+`mfs_mode_t` no es mayor que `Extended`, por lo que nunca deben compararse
+directamente. Para ello `mfs_types.h` expone `mfs_mode_is_8bit()`,
+`mfs_mode_is_classic()` y `mfs_mode_classic_ge()`, que es lo que usa el núcleo.
+
+**Suites**: en 8-bit (y Ultra-Nano) la negociación devuelve `MFS_SUITE_NONE`; la
+integridad la cubre **CRC-32C**. Para no consumir RAM, el build 8-bit usa una
+tabla de *nibble* (16 × 4 B, en `.rodata`) en lugar de la tabla completa de
+256 entradas (1 KiB en `.bss`), con resultado idéntico bit a bit
+(KAT: `CRC32C("123456789") == 0xE3069283`).
+
+### Capa de plataforma (`platform/8bit/`)
+
+| Fichero | Contenido |
+|---|---|
+| `mfs_port_8bit.h/.c` | Primitivas de puerto (crítica, ciclos, tiempo, WFI) por arquitectura: **AVR, 8051, STM8, PIC16/18, Z80** y fallback C genérico. La arquitectura se autodetecta por macros del compilador. |
+| `mfs_l2_8bit.h/.c` | Drivers L2 para **NOR SPI, FRAM SPI/I2C, EEPROM SPI/I2C, flash interna MCU y SD en modo SPI**, con barrera WOB y timeouts acotados. Autodetección JEDEC (`0x9F`). |
+| `mfs_detect_8bit.h/.c` | **Autodetección de capacidades** del MCU (RAM, flash, EEPROM, CRC/​RNG HW, periféricos) y **autoadaptación** de `mfs_config` (arch_class, modo, suite, velocidad de bus). Toda capacidad no confirmada se declara ausente (fallback software). |
+
+El puerto 8-bit registra las primitivas obligatorias del contrato de puerto
+(§20.2) cuando se compila con `MFS_8BIT_PORT_GLUE=1` (build de target); en host
+las aporta `sim/mfs_port_host.c`.
+
+### Build de 8 bits y mínima RAM
+
+La capa 8-bit se compila con `MATRIXFS_BUILD_8BIT=ON` (CMake) o `make 8bit`.
+Para cross-compilar el núcleo a un MCU de 8 bits hay que definir
+`MFS_ALLOW_8BIT_TARGET=1` (`MFS_IS_8BIT_TARGET`); a partir de ahí el core
+dimensiona sus pools y buffers **al mínimo** (§18.2, MFS-RES-001), de modo que
+`sizeof(mf_t)` baja de ~17 KB (16/32-bit) a < 2 KB:
+
+| Recurso | 16/32-bit | 8-bit |
+|---|---|---|
+| `mf_t` (pools estáticos) | ~17 KB | < 2 KB |
+| Ventana de inodos | 48 | 4 |
+| Zonas en RAM | 128 | 16 |
+| Ventana WAL | 256 | 16 |
+| Scratch de página (`MFS_SCRATCH_MAX`) | 4096 B | 256 B |
+
+Los subsistemas pesados y opcionales (PQ/LMS, SDP, ZRP, dedup, CDC) no se
+anuncian en los modos 8-bit; un build 8-bit puede excluir sus unidades de
+traducción (p. ej. `src/sec/mfs_pq.c`, sin dependencias desde el núcleo).

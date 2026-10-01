@@ -1,11 +1,10 @@
 /* mfs_types.h — MatrixFS Ultra «ATLAS» v1.0 — tipos básicos, estados y límites
  *
  * Referencias normativas:
- *   §3.1  MFS-ARCH-010 (exclusión de arquitecturas de 8 bits)
- *   §7.4  Errores tipificados
- *   §18.2 Límites por modo
- *   §25   Tabla de constantes normativas
- *   §20.1 Reglas de codificación (C11, <stdint.h>, sin números mágicos sueltos)
+ *   §3.1  MFS-ARCH-010 (soporte de arquitecturas de 8/16/32 bits con
+ * MFS_ALLOW_8BIT_TARGET) §7.4  Errores tipificados §18.2 Límites por modo §25
+ * Tabla de constantes normativas §20.1 Reglas de codificación (C11, <stdint.h>,
+ * sin números mágicos sueltos)
  */
 #ifndef MATRIXFS_MFS_TYPES_H
 #define MATRIXFS_MFS_TYPES_H
@@ -14,17 +13,37 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ---- Comprobación de arquitectura (MFS-ARCH-010) en tiempo de compilación.
- * Solo arquitecturas de 16/32 bits. Las de 8 bits se rechazan en build. */
+/* ---- Detección de arquitectura y capacidad 8-bit (MFS-ARCH-010 rev. 2) ----
+ */
+/* Define MFS_ALLOW_8BIT_TARGET=1 en la línea de comandos del compilador
+ * (-DMFS_ALLOW_8BIT_TARGET=1) para habilitar objetivos de 8 bits.
+ * Sin esta definición, se mantiene la comprobación estricta original. */
 #if defined(__CHAR_BIT__) && (__CHAR_BIT__ != 8)
 #error "MFS-ARCH-010: arquitectura con CHAR_BIT != 8 no soportada"
 #endif
+
+/* Detección automática de arquitecturas 8-bit conocidas */
 #if !defined(MFS_ALLOW_8BIT_TARGET)
 #if defined(__AVR__) || defined(__CSMC__) || defined(SDCC_mcs51) ||            \
-    defined(_PIC14) || defined(_PIC18)
-#error "MFS-ARCH-010: objetivo de 8 bits no soportado (AVR/8051/PIC1x/STM8)"
+    defined(__SDCC_mcs51) || defined(_PIC14) || defined(_PIC18) ||             \
+    defined(__STM8__) || defined(__STM8) || defined(__Z80__) ||                \
+    defined(__SMALL_C__) || defined(__C51__) || defined(__ICC8051__) ||        \
+    defined(_SDCC_) || defined(__CODE_MODEL_SMALL__) ||                        \
+    defined(__CODE_MODEL_COMPACT__) || defined(__CODE_MODEL_LARGE__) ||        \
+    defined(__CODE_MODEL_HUGE__)
+#define MFS_IS_8BIT_TARGET 1
+#else
+#define MFS_IS_8BIT_TARGET 0
 #endif
+#else
+#define MFS_IS_8BIT_TARGET 1
 #endif
+
+#if MFS_IS_8BIT_TARGET && !defined(MFS_ALLOW_8BIT_TARGET)
+#error                                                                         \
+    "MFS-ARCH-010: objetivo de 8 bits detectado; define MFS_ALLOW_8BIT_TARGET=1 para habilitar"
+#endif
+
 #include <limits.h>
 #if (UINT_MAX < 0xFFFFu)
 #error "MFS-ARCH-010: se exige int >= 16 bits"
@@ -71,15 +90,36 @@ const char *mfs_ststr(mfs_st st);
 
 /* ==== Modos operativos (§6.2, §18) ==== */
 typedef enum {
-  MFS_MODE_ULTRA_NANO = 0, /* 720 B   */
-  MFS_MODE_NANO = 1,       /* 1.5 KB  */
-  MFS_MODE_COMPACT = 2,    /* 3.5 KB  */
-  MFS_MODE_BALANCED = 3,   /* 11.5 KB */
-  MFS_MODE_EXTENDED = 4,   /* 21.5 KB */
+  MFS_MODE_ULTRA_NANO = 0, /* 720 B      — 16/32-bit baseline */
+  MFS_MODE_NANO = 1,       /* 1.5 KB     — 16/32-bit baseline */
+  MFS_MODE_COMPACT = 2,    /* 3.5 KB     — 16/32-bit baseline */
+  MFS_MODE_BALANCED = 3,   /* 11.5 KB    — 16/32-bit baseline */
+  MFS_MODE_EXTENDED = 4,   /* 21.5 KB    — 16/32-bit baseline */
+  /* Modos específicos 8-bit (RAM ≤ 2 KB, determinismo, resiliencia) */
+  MFS_MODE_8BIT_ULTRA = 5,   /* ≤ 512 B    — 8-bit ultra-minimal, solo CRC */
+  MFS_MODE_8BIT_NANO = 6,    /* ≤ 1 KB     — 8-bit + integridad (Blake3/CRC) */
+  MFS_MODE_8BIT_COMPACT = 7, /* ≤ 2 KB     — 8-bit + crypto opcional (Ascon) */
   MFS_MODE_UNSUPPORTED = 0xFF
 } mfs_mode_t;
 
-#define MFS_MODE_COUNT 5
+#define MFS_MODE_COUNT 8
+
+/* ==== Familias de modos (§6.2) ==========================================
+ * La numeración del enumerado NO es monótona entre familias: los modos 8-bit
+ * (5..7) son una familia independiente (RAM ≤ 2 KB), NO "mayores" que Extended.
+ * Por eso no se debe comparar el enumerado directamente; usar estos helpers.
+ * ======================================================================== */
+static inline bool mfs_mode_is_8bit(mfs_mode_t m) {
+  return m >= MFS_MODE_8BIT_ULTRA && m <= MFS_MODE_8BIT_COMPACT;
+}
+static inline bool mfs_mode_is_classic(mfs_mode_t m) {
+  return m >= MFS_MODE_ULTRA_NANO && m <= MFS_MODE_EXTENDED;
+}
+/* "m ∈ familia clásica y m ≥ base" — comparación válida sólo dentro de la
+ * familia clásica (Ultra-Nano..Extended). */
+static inline bool mfs_mode_classic_ge(mfs_mode_t m, mfs_mode_t base) {
+  return mfs_mode_is_classic(m) && mfs_mode_is_classic(base) && m >= base;
+}
 
 /* Presupuestos de RAM MatrixFS por modo (§18.2, sumas exactas §23.2) */
 #define MFS_RAM_ULTRA_NANO 720u
@@ -87,6 +127,10 @@ typedef enum {
 #define MFS_RAM_COMPACT 3584u
 #define MFS_RAM_BALANCED 11520u
 #define MFS_RAM_EXTENDED 21504u
+/* Modos 8-bit: presupuestos agresivos para ≤ 2 KB RAM total */
+#define MFS_RAM_8BIT_ULTRA 512u    /* ≤ 512 B: solo metadatos mínimos + CRC */
+#define MFS_RAM_8BIT_NANO 1024u    /* ≤ 1 KB:  + Blake3/CRC32C integridad */
+#define MFS_RAM_8BIT_COMPACT 2048u /* ≤ 2 KB:  + Ascon-128a AEAD opcional */
 
 /* Cotas de pila propia por modo (§18.2, verificadas por stack-painting) */
 #define MFS_STACK_ULTRA_NANO 64u
@@ -94,13 +138,19 @@ typedef enum {
 #define MFS_STACK_COMPACT 256u
 #define MFS_STACK_BALANCED 512u
 #define MFS_STACK_EXTENDED 1024u
+#define MFS_STACK_8BIT_ULTRA 32u /* 8-bit: pila mínima, sin recursión */
+#define MFS_STACK_8BIT_NANO 48u
+#define MFS_STACK_8BIT_COMPACT 64u
 
-/* Tamaño de chunk por modo (§7.3, §18.1): 128/256/512/4096/4096 */
+/* Tamaño de chunk por modo (§7.3, §18.1): 128/256/512/4096/4096 + 8-bit */
 #define MFS_CHUNK_ULTRA_NANO 128u
 #define MFS_CHUNK_NANO 256u
 #define MFS_CHUNK_COMPACT 512u
 #define MFS_CHUNK_BALANCED 4096u
 #define MFS_CHUNK_EXTENDED 4096u
+#define MFS_CHUNK_8BIT_ULTRA 64u /* 8-bit: chunks pequeños = menos RAM */
+#define MFS_CHUNK_8BIT_NANO 128u
+#define MFS_CHUNK_8BIT_COMPACT 256u
 
 /* Ventana de zonas ZLF direccionables en RAM (§8.1): ppage = (zona<<16)|idx.
  * Cota del objetivo embebido; en builds de host la geometría se deriva del

@@ -1,7 +1,7 @@
-/* test_gate.c — Rechazo temprano (§27.7): MFS_EARCH y MFS_ENOTVIABLE
+/* test_gate.c — Puertas de arquitectura y viabilidad (§27.7)
  *
  * Verifica que el núcleo falla de forma explícita y tipificada en lugar de
- * degradar silenciosamente (MFS-ARCH-010, MFS-VIA-001/002).
+ * degradar silenciosamente (MFS-ARCH-010 rev.2, MFS-VIA-001/002).
  */
 #include "mfs_harness.h"
 #include "mfs_test.h"
@@ -18,21 +18,29 @@ static const char *mode_name(mfs_mode_t m) {
     return "Balanced";
   case MFS_MODE_EXTENDED:
     return "Extended";
+  case MFS_MODE_8BIT_ULTRA:
+    return "8-bit Ultra";
+  case MFS_MODE_8BIT_NANO:
+    return "8-bit Nano";
+  case MFS_MODE_8BIT_COMPACT:
+    return "8-bit Compact";
   default:
     return "unsupported";
   }
 }
 
 void test_gate_earch(void) {
-  TEST_BEGIN("Rechazo temprano: arquitecturas de 8 bits (MFS-ARCH-010)");
+  TEST_BEGIN("Soporte de arquitecturas 8/16/32-bit (MFS-ARCH-010 rev.2)");
   mfs_env_t e;
-  CHECK(env_open(&e, 262144u, NULL));
-  e.cfg.arch_class = 0u; /* HWV declara arch_class = 0 */
 
-  /* 1) el montaje se rechaza con MFS_EARCH (§24.2 paso 2) */
-  CHECK_EQ(mf_init(&e.fs, &e.cfg), MFS_EARCH);
+  /* 1) 8-bit (arch_class 0) es ahora una arquitectura válida: se formatea y el
+   *    núcleo elige un modo 8-bit dedicado para el presupuesto declarado. */
+  CHECK(env_open(&e, 8192u, NULL));
+  e.cfg.arch_class = 0u;
+  CHECK_EQ(env_format(&e), MFS_OK);
+  CHECK_EQ(e.fs.mode, MFS_MODE_8BIT_NANO);
 
-  /* 2) un HWV persistido con arch_class 0 también se rechaza al validar */
+  /* 2) un HWV persistido con arch_class 0 valida correctamente (round-trip) */
   mfs_hwv_t h;
   memset(&h, 0, sizeof(h));
   h.magic[0] = 'M';
@@ -40,9 +48,17 @@ void test_gate_earch(void) {
   h.magic[2] = 'W';
   h.magic[3] = 'V';
   h.arch_class = 0u;
-  CHECK_EQ(mfs_hwv_validate(&h), MFS_EARCH);
+  h.erase_unit = 4096u;
+  h.program_granularity = 1u;
+  h.ram_total = 8192u;
+  {
+    uint8_t ser[64];
+    mfs_hwv_serialize(&h, ser);
+    mfs_hwv_deserialize(&h, ser);
+  }
+  CHECK_EQ(mfs_hwv_validate(&h), MFS_OK);
 
-  /* 3) arch_class > 2 tampoco es una arquitectura soportada */
+  /* 3) una clase de arquitectura desconocida (> 2) sí se rechaza */
   h.arch_class = 3u;
   CHECK_EQ(mfs_hwv_validate(&h), MFS_EARCH);
 
@@ -50,7 +66,7 @@ void test_gate_earch(void) {
   CHECK_EQ(mf_init(&e.fs, NULL), MFS_EINVAL);
 
   env_close(&e);
-  TEST_END("Rechazo MFS_EARCH");
+  TEST_END("Soporte de arquitecturas");
 }
 
 void test_gate_notviable(void) {
@@ -88,6 +104,7 @@ void test_gate_mode_matrix(void) {
   memset(&hwv, 0, sizeof(hwv));
   memset(&cfg, 0, sizeof(cfg));
   hwv.mode_forced = 0xFFu; /* auto */
+  hwv.arch_class = 2u;     /* esta matriz cubre los modos 16/32-bit */
 
   /* El modo seleccionado nunca retrocede al aumentar el presupuesto de RAM. */
   const uint32_t rams[] = {1024u,  4096u,   8192u,   16384u,  32768u,
@@ -118,13 +135,32 @@ void test_gate_mode_matrix(void) {
   hwv.ram_total = 262144u;
   CHECK_EQ(mfs_select_mode(&hwv, &cfg), MFS_MODE_EXTENDED);
 
-  /* Los cinco modos tienen presupuesto normativo creciente y positivo. */
+  /* Los cinco modos clásicos tienen presupuesto normativo creciente y positivo.
+   * Los modos 8-bit forman una familia aparte (RAM ≤ 2 KB) y se comprueban por
+   * separado más abajo. */
   bool creciente = true;
-  for (int m = 1; m < (int)MFS_MODE_COUNT; m++) {
+  for (int m = MFS_MODE_ULTRA_NANO + 1; m <= (int)MFS_MODE_EXTENDED; m++) {
     if (mfs_limits[m].ram_total <= mfs_limits[m - 1].ram_total)
       creciente = false;
   }
   CHECK(creciente);
+
+  /* Familia 8-bit: presupuesto creciente y acotado al techo de 2 KB. */
+  bool creciente8 = true;
+  for (int m = MFS_MODE_8BIT_ULTRA + 1; m <= (int)MFS_MODE_8BIT_COMPACT; m++) {
+    if (mfs_limits[m].ram_total <= mfs_limits[m - 1].ram_total)
+      creciente8 = false;
+  }
+  CHECK(creciente8);
+  CHECK(mfs_limits[MFS_MODE_8BIT_COMPACT].ram_total <= MFS_RAM_8BIT_COMPACT);
+
+  /* Con arch_class 0 el selector prefiere los modos 8-bit dedicados. */
+  hwv.arch_class = 0u;
+  hwv.ram_total = 8192u;
+  CHECK_EQ(mfs_select_mode(&hwv, &cfg), MFS_MODE_8BIT_NANO);
+  hwv.ram_total = 16384u;
+  CHECK_EQ(mfs_select_mode(&hwv, &cfg), MFS_MODE_8BIT_COMPACT);
+  hwv.arch_class = 2u; /* restaurar para las comprobaciones siguientes */
   printf("   %s(1K) -> unsupported | 8K -> %s | 16K -> %s | 32K -> %s | "
          "128K+ -> %s\n",
          "", mode_name(MFS_MODE_ULTRA_NANO), mode_name(MFS_MODE_NANO),

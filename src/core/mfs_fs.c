@@ -309,7 +309,7 @@ mfs_st mfs_meta_flush(mf_t *fs, uint32_t ino) {
   mfs_inode_ram_t *n = mfs_ino_get(fs, ino);
   if (!n)
     return MFS_OK;
-  uint8_t buf[MFS_CHUNK_EXTENDED];
+  uint8_t buf[MFS_SCRATCH_MAX];
   uint16_t len = 0;
   ino_ser(n, buf, &len);
   mfs_st st = mfs_wal_append(fs, 0x100000u + ino, MFS_RT_INODE, buf, len, NULL);
@@ -657,7 +657,7 @@ static uint32_t recovery_zone_order(const mf_t *fs, uint32_t *out) {
 mfs_st mfs_recover_metadata(mf_t *fs) {
   uint32_t pb = mfs_page_bytes(fs);
   uint16_t hs = mfs_e2g_hdr(fs);
-  static uint8_t payload[MFS_CHUNK_EXTENDED];
+  static uint8_t payload[MFS_SCRATCH_MAX];
   static uint32_t order[MFS_MAX_ZONES];
   uint32_t nz = recovery_zone_order(fs, order);
   uint16_t max_ino = 1u;
@@ -771,7 +771,9 @@ int mf_format(mf_t *fs, const void *opts) {
   if (fs == NULL || fs->cfg == NULL)
     return MFS_EINVAL;
   const mfs_config *cfg = fs->cfg;
-  if (cfg->arch_class == 0u)
+  /* MFS-ARCH-010 rev.2: 0=8-bit, 1=16-bit, 2=32-bit son válidos; >2 se rechaza
+   */
+  if (cfg->arch_class > 2u)
     return MFS_EARCH;
 
   memset(fs, 0, sizeof(*fs));
@@ -781,7 +783,7 @@ int mf_format(mf_t *fs, const void *opts) {
   mfs_st st = mfs_hal_detect(fs, cfg, &fs->hwv);
   if (st != MFS_OK)
     return st;
-  if (fs->hwv.arch_class == 0u) {
+  if (fs->hwv.arch_class > 2u) {
     mfs_hct_event(fs, MFS_EV_ARCH_REJECT, 0);
     return MFS_EARCH;
   }
@@ -869,8 +871,10 @@ int mf_format(mf_t *fs, const void *opts) {
 int mf_init(mf_t *fs, const mfs_config *cfg) {
   if (fs == NULL || cfg == NULL || cfg->drv == NULL)
     return MFS_EINVAL;
-  if (cfg->arch_class == 0u)
-    return MFS_EARCH; /* §24.2 paso 2 */
+  /* MFS-ARCH-010 rev.2: se aceptan clases 0 (8-bit), 1 (16-bit) y 2 (32-bit);
+   * sólo se rechaza una clase desconocida (> 2). */
+  if (cfg->arch_class > 2u)
+    return MFS_EARCH;
   memset(fs, 0, sizeof(*fs));
   fs->cfg = cfg;
   g_mfs_instance = fs;
@@ -1185,7 +1189,7 @@ int mf_read(mfs_file *f, void *buf, size_t len, size_t *rd) {
   while (done < len && f->pos < ino->size) {
     uint32_t vp = (uint32_t)(f->pos / pb);
     uint32_t off = (uint32_t)(f->pos % pb);
-    uint8_t page[MFS_CHUNK_EXTENDED];
+    uint8_t page[MFS_SCRATCH_MAX];
     uint16_t rlen = 0;
     uint32_t got =
         mfs_extent_read(fs, ino, vp, page, (uint16_t)sizeof(page), &rlen);
@@ -1245,7 +1249,7 @@ int mf_write(mfs_file *f, const void *buf, size_t len, size_t *wr) {
   while (done < len) {
     uint32_t vp = (uint32_t)((f->pos + done) / pb);
     uint32_t off = (uint32_t)((f->pos + done) % pb);
-    uint8_t page[MFS_CHUNK_EXTENDED];
+    uint8_t page[MFS_SCRATCH_MAX];
     uint16_t plen = 0;
     if (off != 0u) {
       uint16_t rlen = 0;
@@ -1961,7 +1965,7 @@ int mf_fpt_apply(mfs_fpt h, const void *delta, size_t len) {
   h.raw[1] += (uint32_t)len;
   h.raw[2] = mfs_crc32c((const uint8_t *)delta, (uint32_t)len, h.raw[2]);
   /* MFS-FPT-001(2): overlay de extents en streaming con buffers 2×chunk */
-  uint8_t buf[MFS_CHUNK_EXTENDED];
+  uint8_t buf[MFS_SCRATCH_MAX];
   uint16_t n = (uint16_t)((len > sizeof(buf)) ? sizeof(buf) : len);
   mfs_st st = mfs_wal_append(fs, 0x800000u + fs->epoch, MFS_RT_DATA,
                              (const uint8_t *)delta, n, NULL);
@@ -2207,8 +2211,10 @@ void mfs_hct_event(mf_t *fs, uint16_t ev, uint32_t val) {
 }
 
 void mfs_hct_flush(mf_t *fs) {
-  if (fs->mode <= MFS_MODE_NANO && hct_n > 0u) {
-    uint8_t agg[MFS_CHUNK_EXTENDED];
+  if (((mfs_mode_is_classic(fs->mode) && fs->mode <= MFS_MODE_NANO) ||
+       mfs_mode_is_8bit(fs->mode)) &&
+      hct_n > 0u) {
+    uint8_t agg[MFS_SCRATCH_MAX];
     uint16_t o = 0;
     for (uint8_t i = 0; i < hct_n && o + 12u <= sizeof(agg); i++) {
       hct_ent_t *e = &hct_ring[(hct_head + i) % 64u];
@@ -2396,7 +2402,7 @@ int mf_verify(mf_t *fs, mfs_verify_level lvl) {
       if (lvl >= MFS_VERIFY_META) {
         uint8_t kind, gen, snap, dict;
         uint16_t rlen;
-        static uint8_t tmp[MFS_CHUNK_EXTENDED];
+        static uint8_t tmp[MFS_SCRATCH_MAX];
         mfs_st st = mfs_rec_read(fs, pp, lba, 0xFFu, &kind, &gen, &snap, &dict,
                                  tmp, (uint16_t)sizeof(tmp), &rlen);
         if (st == MFS_EBADMSG || st == MFS_ESECURITY_STATE)
@@ -2414,7 +2420,7 @@ int mf_verify(mf_t *fs, mfs_verify_level lvl) {
 
 /* persistencia de tabla de snapshots (§10.8): registro EPOCH */
 mfs_st mfs_snap_persist(mf_t *fs) {
-  uint8_t buf[MFS_CHUNK_EXTENDED];
+  uint8_t buf[MFS_SCRATCH_MAX];
   uint16_t o = 0;
   buf[o++] = fs->snap_count;
   for (uint8_t i = 0; i < fs->snap_count && o + 8u <= sizeof(buf); i++) {
