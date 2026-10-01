@@ -1,14 +1,14 @@
-# Configuración de traducción automática del README en GitHub
-# Funcionalidad: GitHub "README translations" (auto-translation)
-# Especificación oficial del formato:
-#   https://github.com/readme-translations/translation-config
+# Idiomas del README de MatrixFS y traducción automática.
 #
-# Reglas del formato:
-#   - `default:` define el idioma ORIGINAL del README.md de la raíz del repo.
-#   - `languages:` lista, EN ORDEN DE PRIORIDAD, los idiomas que aparecerán
-#     en el selector de idiomas del README (incluyendo el idioma fuente).
+# IMPORTANTE: GitHub NO ofrece una función nativa de traducción de READMEs.
+# La traducción la realiza el workflow .github/workflows/translate-readme.yml,
+# que lee este archivo como ÚNICA fuente de verdad en cada push.
+#
+# Reglas:
+#   - `default:` es el idioma ORIGINAL del README.md de la raíz (fuente).
+#   - `languages:` lista, EN ORDEN DE PRIORIDAD, todos los idiomas del selector.
 #   - Los códigos usan la norma IETF BCP 47 (subtags ISO 639-1 + región).
-#   - El archivo debe vivir en `.github/languages.yaml` (o languages.yml).
+#   - Cada idioma distinto de `default` se traduce a README.<código>.md.
 #
 # Idioma predeterminado del proyecto: español (es).
 

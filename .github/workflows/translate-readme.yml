@@ -1,0 +1,82 @@
+# Traducción automática del README (fuente: español).
+#
+# GitHub NO traduce READMEs de forma nativa: esta automatización la realiza este
+# workflow en cada push que modifique README.md. Los idiomas destino se leen de
+# .github/languages.yaml (única fuente de verdad).
+#
+# Configuración previa (una sola vez) en
+# GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret:
+#   - ACTION_BOT      : PAT (classic) con scopes `repo` y `workflow`. OBLIGATORIO.
+#   - OPENAI_API_KEY  : opcional. Traducción de mayor calidad (gpt-4o).
+#   - ZHIPUAI_API_KEY : opcional. Alternativa gratuita (glm-4-flash).
+#   Si no se define ninguna clave de API se usa el backend gratuito g4f.
+
+name: Translate README
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: translate-readme-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  translate:
+    # Evita bucles: no re-ejecutar sobre los commits generados por el propio bot.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == null ||
+      !contains(github.event.head_commit.message, 'Auto-translate README')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          token: ${{ secrets.ACTION_BOT }}
+
+      - name: Resolver idiomas destino desde .github/languages.yaml
+        id: targets
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import re, pathlib
+          text = pathlib.Path('.github/languages.yaml').read_text(encoding='utf-8')
+          default = re.search(r'^\s*default:\s*([\w-]+)', text, re.M).group(1)
+          block = text.split('languages:', 1)[1]
+          langs = [m.group(1) for m in re.finditer(r'^\s*-\s*([\w-]+)', block, re.M)]
+          print('langs=' + ','.join(l for l in langs if l != default))
+          print('default=' + default)
+          PY
+
+      # La acción traduce el README a todos los idiomas destino salvo el de origen.
+      # Nota: si el origen no es 'en', la acción omite el inglés (se cubre más abajo).
+      - name: Traducir README (resto de idiomas)
+        uses: Lin-jun-xiang/action-translate-readme@v2
+        with:
+          token: ${{ secrets.ACTION_BOT }}
+          langs: ${{ steps.targets.outputs.langs }}
+
+      # Inglés: paso propio. La acción no genera README.en.md cuando el README
+      # raíz no está en inglés. Reutiliza las dependencias ya instaladas por la acción.
+      - name: Generar README en inglés
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ZHIPUAI_API_KEY: ${{ secrets.ZHIPUAI_API_KEY }}
+        run: python3 .github/scripts/translate_en.py
+
+      - name: Commit del README en inglés
+        run: |
+          git config user.name  "Continuous Integration"
+          git config user.email "username@users.noreply.github.com"
+          git add README.en.md
+          git diff --staged --quiet || {
+            git commit -m "Auto-translate README"
+            git push
+          }

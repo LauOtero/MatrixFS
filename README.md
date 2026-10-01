@@ -1,7 +1,8 @@
 <!--
-Este README se sirve en español como idioma predeterminado.
-La traducción automática de GitHub (README translations) está configurada en
-.github/languages.yaml — default: es | en, zh-CN, de, ja, fr, pt-BR, ru, ko, it.
+Este README se sirve en español como idioma predeterminado y fuente.
+La traducción automática se realiza con GitHub Actions
+(.github/workflows/translate-readme.yml), que usa .github/languages.yaml como
+configuración de idiomas — default: es | en, zh-CN, de, ja, fr, pt-BR, ru, ko, it.
 -->
 
 <div align="center">
@@ -22,9 +23,9 @@ La traducción automática de GitHub (README translations) está configurada en
 ![Arch: 8/16/32/64-bit][badge-arch]
 [![Tests: 1232 passing][badge-tests]]()
 
-[🇪🇸 Español](#-matrixfs-atlas) · [🇺🇸 English](#-matrixfs-atlas) · [🇩🇪 Deutsch](#-matrixfs-atlas) · [🇫🇷 Français](#-matrixfs-atlas) · [🇨🇳 中文](#-matrixfs-atlas) · [🇯🇵 日本語](#-matrixfs-atlas) · [🇧🇷 Português](#-matrixfs-atlas)
+[🇪🇸 Español](README.md) · [🇺🇸 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇨🇳 中文](README.zh-CN.md) · [🇯🇵 日本語](README.ja.md) · [🇧🇷 Português](README.pt-BR.md) · [🇷🇺 Русский](README.ru.md) · [🇰🇷 한국어](README.ko.md) · [🇮🇹 Italiano](README.it.md)
 
-*Este README usa la **traducción automática de GitHub**: el idioma predeterminado es el **español** y los demás idiomas aparecen en el selector de arriba. Configuración oficial en [`.github/languages.yaml`](.github/languages.yaml).*
+*Este README se traduce automáticamente con **GitHub Actions**: el idioma fuente es el **español** y las demás versiones se generan en cada cambio mediante [`.github/workflows/translate-readme.yml`](.github/workflows/translate-readme.yml). Configuración de idiomas en [`.github/languages.yaml`](.github/languages.yaml).*
 
 </div>
 
@@ -603,27 +604,36 @@ no se pueda ejecutar).
 
 ## 🌐 Multiidioma
 
-Este README activa la **traducción automática de GitHub** (*README translations*) mediante el archivo de configuración
-[`.github/languages.yaml`](.github/languages.yaml), conforme a las especificaciones oficiales del *feature*
-([github.com/readme-translations/translation-config](https://github.com/readme-translations/translation-config)).
+Este README se traduce automáticamente mediante **GitHub Actions** en cada cambio de [README.md](README.md).
+GitHub **no** ofrece traducción nativa de READMEs, por lo que el proyecto la implementa con el workflow
+[`.github/workflows/translate-readme.yml`](.github/workflows/translate-readme.yml), que usa
+[`.github/languages.yaml`](.github/languages.yaml) como **única fuente de verdad** de los idiomas.
 
-- **Idioma predeterminado (fuente):** 🇪🇸 **Español (`es`)** — todo el contenido original de este README está redactado en español.
-- **Idiomas soportados (en orden de prioridad tras el principal):** 🇺🇸 inglés (`en`), 🇨🇳 chino simplificado (`zh-CN`), 🇩🇪 alemán (`de`), 🇯🇵 japonés (`ja`), 🇫🇷 francés (`fr`), 🇧🇷 portugués de Brasil (`pt-BR`), 🇷🇺 ruso (`ru`), 🇰🇷 coreano (`ko`) e 🇮🇹 italiano (`it`).
+- **Idioma fuente:** 🇪🇸 **Español (`es`)** — todo el contenido original de este README está redactado en español.
+- **Idiomas generados:** 🇺🇸 inglés (`en`), 🇨🇳 chino simplificado (`zh-CN`), 🇩🇪 alemán (`de`), 🇯🇵 japonés (`ja`), 🇫🇷 francés (`fr`), 🇧🇷 portugués de Brasil (`pt-BR`), 🇷🇺 ruso (`ru`), 🇰🇷 coreano (`ko`) e 🇮🇹 italiano (`it`).
 
-GitHub muestra un **selector de idiomas** sobre el README y sirve la traducción automática correspondiente; los enlaces relativos, imágenes y bloques de código funcionan sin cambios en todos los idiomas porque la traducción sólo afecta al texto renderizado. Los `README.md` de las subcarpetas del proyecto (`DOCS/`, `platform/*/`, etc.) mantienen su contenido y **no se ven afectados** por esta configuración.
+En cada *push* que modifique `README.md`, el workflow genera `README.<código>.md` para cada idioma destino y los
+**commitea automáticamente**. El selector de idiomas de la cabecera enlaza a esos archivos; los enlaces relativos,
+imágenes y bloques de código se conservan porque la traducción sólo afecta al texto. Los `README.md` de las
+subcarpetas del proyecto (`DOCS/`, `platform/*/`, etc.) **no se traducen**.
 
-| Idioma | Código | Rol |
-|:---|:---|:---|
-| 🇪🇸 Español | `es` | **Predeterminado / fuente** |
-| 🇺🇸 English | `en` | Traducción automática · prioridad 1 |
-| 🇨🇳 中文（简体） | `zh-CN` | Traducción automática · prioridad 2 |
-| 🇩🇪 Deutsch | `de` | Traducción automática · prioridad 3 |
-| 🇯🇵 日本語 | `ja` | Traducción automática · prioridad 4 |
-| 🇫🇷 Français | `fr` | Traducción automática · prioridad 5 |
-| 🇧🇷 Português (Brasil) | `pt-BR` | Traducción automática · prioridad 6 |
-| 🇷🇺 Русский | `ru` | Traducción automática · prioridad 7 |
-| 🇰🇷 한국어 | `ko` | Traducción automática · prioridad 8 |
-| 🇮🇹 Italiano | `it` | Traducción automática · prioridad 9 |
+> [!NOTE]
+> El workflow requiere el secret `ACTION_BOT` (PAT con scopes `repo` y `workflow`) en *Settings → Secrets and
+> variables → Actions*. Opcionalmente `OPENAI_API_KEY` (gpt-4o) o `ZHIPUAI_API_KEY` (glm-4-flash) mejoran la
+> calidad; sin ninguna clave se usa el backend gratuito `g4f`.
+
+| Idioma | Código | Archivo | Rol |
+|:---|:---|:---|:---|
+| 🇪🇸 Español | `es` | [`README.md`](README.md) | **Fuente / predeterminado** |
+| 🇺🇸 English | `en` | [`README.en.md`](README.en.md) | Traducción automática · prioridad 1 |
+| 🇨🇳 中文（简体） | `zh-CN` | [`README.zh-CN.md`](README.zh-CN.md) | Traducción automática · prioridad 2 |
+| 🇩🇪 Deutsch | `de` | [`README.de.md`](README.de.md) | Traducción automática · prioridad 3 |
+| 🇯🇵 日本語 | `ja` | [`README.ja.md`](README.ja.md) | Traducción automática · prioridad 4 |
+| 🇫🇷 Français | `fr` | [`README.fr.md`](README.fr.md) | Traducción automática · prioridad 5 |
+| 🇧🇷 Português (Brasil) | `pt-BR` | [`README.pt-BR.md`](README.pt-BR.md) | Traducción automática · prioridad 6 |
+| 🇷🇺 Русский | `ru` | [`README.ru.md`](README.ru.md) | Traducción automática · prioridad 7 |
+| 🇰🇷 한국어 | `ko` | [`README.ko.md`](README.ko.md) | Traducción automática · prioridad 8 |
+| 🇮🇹 Italiano | `it` | [`README.it.md`](README.it.md) | Traducción automática · prioridad 9 |
 
 ---
 
