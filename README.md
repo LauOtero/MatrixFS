@@ -2,7 +2,7 @@
 
 # 🟩 MatrixFS Ultra «ATLAS»
 
-**Sistema de archivos embebido determinista, transaccional y cripto-agile para NOR/NAND/FRAM/MRAM/SD-eMMC — desde 512 B de RAM (8, 16 y 32 bits).**
+**Sistema de archivos embebido determinista, transaccional y cripto-agile para NOR/NAND/FRAM/MRAM/SD-eMMC — desde 512 B de RAM (8, 16, 32 y 64 bits).**
 
 *Implementación de la especificación técnica MFS-SPEC-003 Edición 1.0 «ATLAS»*
 
@@ -10,7 +10,7 @@
 [![C Standard](https://img.shields.io/badge/C-C11-blue)](https://en.cppreference.com/w/c/11)
 [![No Heap](https://img.shields.io/badge/heap-ZERO-brightgreen)](#-garantías-normativas)
 [![MISRA](https://img.shields.io/badge/MISRA%20C%3A2012-oriented-orange)]()
-[![Status](https://img.shields.io/badge/status-Fase%201--2%20(en%20desarrollo)-yellow)](#-roadmap-y-estado)
+[![Status](https://img.shields.io/badge/status-Fases%201--7%20implementadas-yellow)](#-roadmap-y-estado)
 [![Arch](https://img.shields.io/badge/arch-8%2F16%2F32%2F64--bit-orange)]()
 [![Tests](https://img.shields.io/badge/tests-1147%20passing-brightgreen)]()
 
@@ -40,7 +40,7 @@ Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** —
 
 | # | Pilar | Implementación |
 |---|---|---|
-| 1 | **Autoconfiguración segura** | Cascada HAL §5.1 (JEDEC/SFDP/CFI/assets), HWV de 64 B persistido @LBA 512 con CRC-32C |
+| 1 | **Autoconfiguración segura** | Cascada HAL §5.1 (JEDEC/SFDP/CFI/assets), **detección de arquitectura y aceleradores HW** (MFS-ARCH-010 rev.3), HWV de 64 B persistido @LBA 512 con CRC-32C |
 | 2 | **Memoria estática certificada** | Contratos RSC §7, pools estáticos, overlay por modo, cero `malloc()` (MFS-RES-001) |
 | 3 | **Viabilidad honesta** | Análisis firmware+stack+perif+margen ≥10 % (§6.1); rechazo explícito sin arranque |
 | 4 | **Transaccionalidad WAL+ v3** | Tokens A/B con contador termométrico TFC, checkpoint con raíz BLAKE3, replay acotado por cota BMT (§9) |
@@ -64,7 +64,7 @@ Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** —
 | **Nano** | 1.5 KB | 96 B | 256 B | MCUs 16/32-bit 8–16 KB |
 | **Compact** | 3.5 KB | 256 B | 512 B | MCUs 16/32-bit 16–20 KB |
 | **Balanced** | 11.5 KB | 512 B | 4096 B | MCUs 16/32-bit 64 KB+ |
-| **Extended** | 21.5 KB | 1 KB | 4096 B | Dual-medio, PQ, ML certificable |
+| **Extended** | 21.5 KB | 1 KB | 4096 B | 16/32/64-bit: dual-medio, PQ, ML certificable |
 
 > Los modos **8-bit** forman una familia independiente; el selector los elige
 > automáticamente cuando `arch_class == 0`. No se comparan por orden con los
@@ -77,6 +77,22 @@ Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** —
 Además de los 12 pilares, MatrixFS Ultra implementa capacidades avanzadas que
 respaldan sus garantías industriales. Se documentan aquí para que el lector
 pueda auditar la superficie real del sistema.
+
+### 🧩 Arquitecturas y aceleración por hardware (MFS-ARCH-010 rev. 3)
+- **Clases de 8/16/32/64 bits** con un único modelo en el núcleo
+  (`src/core/mfs_arch.c`) y autodetección (`MFS_ARCH_AUTO`) o declaración
+  explícita en `mfs_config.arch_class`.
+- **Puerto del núcleo** por arquitectura (`src/core/mfs_port_arch.c`): AVR, 8051,
+  STM8, PIC16/18, Z80 y *fallback* C genérico (16/32/64 bits).
+- **Detección de aceleradores** (`MFS_HWACCEL_*`): CRC-32C por instrucción, AES,
+  SHA-256, CLMUL, SIMD, RNG y CAS atómicos; macros del compilador + refinado en
+  runtime (`__builtin_cpu_supports`/CPUID).
+- **Aceleración efectiva**: el CRC-32C usa la instrucción CRC32 (x86 SSE4.2 /
+  ARMv8 CRC32) cuando existe, con resultado idéntico a la tabla software.
+- **Honestidad de capacidades** (MFS-HW-001): el HWV sólo declara lo que el
+  núcleo puede *ejecutar*; el resto se reporta como diagnóstico.
+- **Modos de RAM mínima** para 8 bits (Ultra/Nano/Compact) y dimensionado
+  condicional de pools y *scratch* con `MFS_ALLOW_8BIT_TARGET`.
 
 ### 🔄 Transaccionalidad (WAL+ v3)
 - **Tokens A/B** con **Contador Termométrico (TFC)**.
@@ -137,7 +153,7 @@ matrixfs-ultra/
 ├── DOCS/                                  # 📄 Especificación normativa completa (MFS-SPEC-003)
 │   └── MatrixFS Ultra - Technical Specifications and Implementation Guide.md
 ├── include/matrixfs/                      # 🔌 Cabeceras públicas (contrato estable)
-│   ├── mfs_types.h                        #    Tipos, 26 códigos de estado, modos, clases RT
+│   ├── mfs_types.h                        #    Tipos, 29 códigos de estado, modos, clases RT y de arquitectura
 │   ├── mfs_port.h                         #    Contrato de puerto §20 (HAL ops, driver L2, HWV)
 │   └── matrixfs.h                         #    API pública §21 (POSIX-subset + VIO/DAIO + tx)
 ├── src/                                   # ⚙️ Núcleo (sin heap, MISRA-oriented)
@@ -181,7 +197,7 @@ matrixfs-ultra/
 │   └── vfram.h                            #    Tier T0 byte-addressable (FRAM/MRAM), sin erase
 ├── tests/                                 # ✅ Plan de verificación §27 (KATs, FIH, estrés, extremos, formal, VFS)
 ├── tools/                                 # 🔧 mfstool: manifiestos, trazas HCT, bench, analizador
-├── Makefile · CMakeLists.txt              # 🛠️ Build de host (lib, suite, mfstool) + targets ARM Cortex-M / MSP430
+├── Makefile · CMakeLists.txt              # 🛠️ Build de host (lib, suite, mfstool, mfsctl) + drivers MCU (`make mcu`)
 ├── LICENSE                                # ⚖️ Apache 2.0
 ├── CONTRIBUTING.md                        # 🤝 Proceso de contribución y notificación de mejoras
 ├── CHANGELOG.md                           # 📋 Mejoras y cambios por versión
@@ -197,6 +213,9 @@ matrixfs-ultra/
 - Compilador C11 (`gcc ≥ 9`, `clang ≥ 12`, o IAR/ARMCC para targets)
 - `make` o `cmake ≥ 3.16`
 - Host Linux/macOS/Windows-WSL para simulación y tests
+- Para MCU: el toolchain del objetivo (`arm-none-eabi-gcc`, `avr-gcc`, `sdcc`,
+  `xc8`, …). El núcleo no depende de plataforma; sólo hay que aportar el driver
+  L2 del medio (los drivers genéricos de MCU están en `platform/common/`).
 
 ### Construir (host + vFlash)
 
@@ -206,6 +225,7 @@ cd matrixfs-ultra
 make            # genera libmatrixfs.a + binarios de test sobre sim/vFlash
 make test       # ejecuta KATs §27.1 y suite de ciclo de vida
 make bench      # MFS-Bench v2 (W1–W11) sobre vFlash
+make mcu        # drivers L2 para MCU (libmatrixfs_mcu.a)
 ```
 
 ### Ejemplo mínimo de uso
@@ -226,7 +246,7 @@ memset(&cfg, 0, sizeof cfg);
 cfg.drv             = &my_spi_nor_driver;
 cfg.geom            = &my_nor_geom;
 cfg.ram_total       = 16u * 1024u;        /* RAM física REAL del MCU */
-cfg.arch_class      = 2u;                 /* 0=8-bit · 1=16-bit · 2=32-bit */
+cfg.arch_class      = 2u;                 /* 0=8-bit · 1=16-bit · 2=32-bit · 3=64-bit · 0xFF=auto */
 cfg.forced_mode     = MFS_MODE_UNSUPPORTED;/* automático (§6.2) */
 cfg.suite_preferred = 0xFFu;              /* negociar (§10.6) */
 cfg.key             = NULL;               /* NULL ⇒ sin cifrado */
@@ -342,7 +362,7 @@ Estas reglas son **auditables en build y runtime**, no aspiracionales:
 | **MFS-SEC-001** | Nonce normativo | época × seq monotónico; nunca reutilización |
 | **MFS-SEC-002** | Ceroización | Claves/nonce/plaintext limpiados tras uso |
 | **MFS-SEC-005** | EtM en S0 | Encrypt-then-MAC (AES-256-CTR + HMAC-SHA256) |
-| **MFS-HW-001** | Fallback SW | Negociación de aceleradores sin bajar garantías |
+| **MFS-HW-001** | Fallback SW | Aceleradores autodetectados (CRC-32C por instrucción) con ruta SW equivalente e idéntica |
 | **MFS-B3-001** | BLAKE3 conforme | Modo árbol estándar; KAT publicado |
 | **MFS-SCOPE-001** | Claims ligados | Todo KPI citable ↔ escenario MFS-Bench v2 |
 
@@ -424,7 +444,7 @@ Medición sobre el puerto host con `vFlash` NOR (1 MiB, sector 4 KiB), compilaci
 | `mfs_wom_t` | 12 | WOM-p §11.4 |
 | `mfs_health_t` | 168 | telemetría HCT §16 |
 | `mfs_hwv_t` | 76 | HWV (en flash) §5.2 |
-| Tabla CRC-32C (16/32-bit vs 8-bit) | 1024 → 64 | tabla completa vs *nibble* |
+| Tabla CRC-32C (16/32/64-bit vs 8-bit) | 1024 → 64 | tabla completa vs *nibble* |
 
 > **Nota metodológica:** los valores son cotas superiores medidas en host (no son WCET de target); la huella estática es determinista y verificable en compilación. Las desviaciones y límites conocidos se detallan en [DOCS/known-limitations.md](DOCS/known-limitations.md).
 
