@@ -63,17 +63,18 @@ target_include_directories(mfsctl PRIVATE
 enable_testing()
 add_test(NAME matrixfs_suite COMMAND mfs_tests)
 
-# --- Capa de soporte para MCU de 8 bits (opcional) ---
-# Puerto (AVR/8051/STM8/PIC16-18/Z80/genérico), drivers L2 (NOR/FRAM/EEPROM/
-# flash interna/SD-SPI) y auto-detección de capacidades. Para cross-compilar a
-# un MCU de 8 bits, definir MFS_ALLOW_8BIT_TARGET=1 en el toolchain (véase
-# include/matrixfs/mfs_types.h, MFS-ARCH-010 rev.2).
-option(MATRIXFS_BUILD_8BIT "Compila la capa de soporte para MCU de 8 bits" OFF)
-if (MATRIXFS_BUILD_8BIT)
-  add_library(matrixfs_8bit STATIC
-    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_port_8bit.c
-    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_l2_8bit.c
-    ${CMAKE_SOURCE_DIR}/platform/8bit/mfs_detect_8bit.c)
-  target_include_directories(matrixfs_8bit PUBLIC
-    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/platform/8bit)
+# --- Drivers L2 para MCU (opcional) ---
+# El puerto (§20.2) y el modelo de arquitectura/aceleración HW viven en el
+# NÚCLEO: src/core/mfs_port_arch.c y src/core/mfs_arch.c (ya incluidos en
+# CORE_SRC). Esta librería sólo aporta los drivers de dispositivo (NOR/FRAM/
+# EEPROM SPI-I2C, flash interna del MCU y SD-SPI), compartidos por objetivos de
+# 8/16/32 bits. Para cross-compilar a 8 bits, definir MFS_ALLOW_8BIT_TARGET=1
+# (MFS-ARCH-010 rev.3).
+option(MATRIXFS_BUILD_MCU "Compila los drivers L2 para MCU" OFF)
+if (MATRIXFS_BUILD_MCU)
+  add_library(matrixfs_mcu STATIC
+    ${CMAKE_SOURCE_DIR}/platform/common/mfs_l2_8bit.c)
+  target_include_directories(matrixfs_mcu PUBLIC
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/platform/common)
 endif()

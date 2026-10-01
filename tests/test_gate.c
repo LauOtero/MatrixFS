@@ -58,11 +58,20 @@ void test_gate_earch(void) {
   }
   CHECK_EQ(mfs_hwv_validate(&h), MFS_OK);
 
-  /* 3) una clase de arquitectura desconocida (> 2) sí se rechaza */
+  /* 3) 64-bit (arch_class 3) también es válido: round-trip y validación OK */
   h.arch_class = 3u;
+  {
+    uint8_t ser2[64];
+    mfs_hwv_serialize(&h, ser2);
+    mfs_hwv_deserialize(&h, ser2);
+  }
+  CHECK_EQ(mfs_hwv_validate(&h), MFS_OK);
+
+  /* 4) una clase de arquitectura desconocida (> 3) sí se rechaza */
+  h.arch_class = 4u;
   CHECK_EQ(mfs_hwv_validate(&h), MFS_EARCH);
 
-  /* 4) sin arquitectura declarada la API ni siquiera arranca */
+  /* 5) sin arquitectura declarada la API ni siquiera arranca */
   CHECK_EQ(mf_init(&e.fs, NULL), MFS_EINVAL);
 
   env_close(&e);
@@ -93,6 +102,14 @@ void test_gate_notviable(void) {
   e.cfg.forced_mode = MFS_MODE_NANO;
   CHECK_EQ(env_format(&e), MFS_OK);
   CHECK_EQ(e.fs.mode, MFS_MODE_NANO);
+  env_close(&e);
+
+  /* Autodetección de arquitectura: MFS_ARCH_AUTO se resuelve a la clase del
+   * objetivo (32/64 bits en host) y el núcleo elige un modo clásico. */
+  CHECK(env_open(&e, 262144u, NULL));
+  e.cfg.arch_class = (uint8_t)MFS_ARCH_AUTO;
+  CHECK_EQ(env_format(&e), MFS_OK);
+  CHECK(mfs_mode_is_classic((mfs_mode_t)e.fs.mode));
   env_close(&e);
   TEST_END("Rechazo MFS_ENOTVIABLE");
 }
@@ -165,6 +182,36 @@ void test_gate_mode_matrix(void) {
          "128K+ -> %s\n",
          "", mode_name(MFS_MODE_ULTRA_NANO), mode_name(MFS_MODE_NANO),
          mode_name(MFS_MODE_COMPACT), mode_name(MFS_MODE_EXTENDED));
+
+  /* 64-bit (arch_class 3): usa la familia clásica, con Extended como techo. */
+  hwv.arch_class = (uint8_t)MFS_ARCH_64BIT;
+  hwv.ram_total = 262144u;
+  CHECK_EQ(mfs_select_mode(&hwv, &cfg), MFS_MODE_EXTENDED);
+
+  /* Autodetección de arquitectura y capacidades de aceleración HW. */
+  {
+    mfs_arch_info_t ai;
+    CHECK_EQ(mfs_arch_detect(&ai), MFS_OK);
+    CHECK(ai.arch_class <= (uint8_t)MFS_ARCH_64BIT);
+    CHECK(ai.bits == 8u || ai.bits == 16u || ai.bits == 32u || ai.bits == 64u);
+    CHECK(ai.name != NULL);
+    /* Todo objetivo de 32/64 bits con CAS declara ATOMICS; en 8 bits no. */
+    if (MFS_IS_8BIT_TARGET)
+      CHECK((ai.hwaccel & MFS_HWACCEL_ATOMICS) == 0u);
+    else
+      CHECK((ai.hwaccel & MFS_HWACCEL_ATOMICS) != 0u);
+
+    /* KAT CRC-32C (ruta activa: instrucción HW si existe, si no tabla). */
+    const char *kat = "123456789";
+    uint32_t c = mfs_crc32c((const uint8_t *)kat, 9u, 0u);
+    CHECK_EQ(c, 0xE3069283u);
+    /* Si hay ruta acelerada, debe coincidir con la de referencia. */
+    if (mfs_arch_crc32c_hw_available()) {
+      uint32_t hw = mfs_crc32c_hw((const uint8_t *)kat, 9u, 0u);
+      CHECK_EQ(hw, c);
+      CHECK((ai.hwaccel & MFS_HWACCEL_CRC32C) != 0u);
+    }
+  }
 
   /* Los modos compactos y superiores negocian suite; Ultra-Nano no (§10.6). */
   cfg.key = NULL;

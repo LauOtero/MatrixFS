@@ -1,7 +1,7 @@
 # Integración embebida: MCU de 32 bits, 8 bits y ecosistemas
 
 Spec: §20 (contrato de puerto), §21 (API), §22 (layout), §5–§6 (detección y
-viabilidad), MFS-ARCH-010 rev. 2.
+viabilidad), MFS-ARCH-010 rev. 3.
 
 Este documento describe cómo se integra MatrixFS Ultra en
 microcontroladores y en los ecosistemas de desarrollo más usados. El núcleo no
@@ -78,16 +78,27 @@ flash.page_size  = 256u;
 if (mfs_embedded_mount(&fs, &flash, &o) != MFS_OK) { /* error tipificado */ }
 ```
 
-## MCU de 8 bits — `platform/8bit/`
+## Arquitecturas 8/16/32/64 bits (integradas en el núcleo)
 
-Los MCU de 8 bits (AVR/ATmega, 8051, STM8, PIC16/18, Z80) se soportan con una
-capa específica y con **modos de RAM mínima**:
+El puerto (§20.2) y el modelo de arquitectura son parte del **núcleo**, común a
+todas las clases:
 
 | Fichero | Contenido |
 |---|---|
-| `mfs_port_8bit.{h,c}` | Primitivas de puerto por arquitectura (crítica, ciclos, tiempo, WFI), autodetectadas por macros del compilador; *fallback* C genérico. |
-| `mfs_l2_8bit.{h,c}` | Drivers L2 para NOR SPI, FRAM SPI/I2C, EEPROM SPI/I2C, flash interna del MCU y SD en modo SPI, con barrera WOB y timeouts acotados. Autodetección JEDEC (`0x9F`). |
-| `mfs_detect_8bit.{h,c}` | Detección de capacidades del MCU (RAM, flash, EEPROM, CRC/​RNG HW, periféricos) y **autoadaptación** de `mfs_config` (arch_class, modo, suite, velocidad de bus). |
+| `src/core/mfs_port_arch.{h,c}` | Puerto por arquitectura (crítica, ciclos, tiempo, WFI) — **AVR, 8051, STM8, PIC16/18, Z80** y *fallback* C genérico (16/32/64 bits). Autodetectado por macros del compilador. |
+| `src/core/mfs_arch.c` | Clasificación de arquitectura (8/16/32/64-bit o `MFS_ARCH_AUTO`) y **detección/autoconfiguración de aceleración por hardware**. Tipos en `include/matrixfs/mfs_types.h` (`mfs_arch_info_t`, `MFS_HWACCEL_*`); API en `src/mfs_internal.h`. |
+| `platform/common/mfs_l2_8bit.{h,c}` | Drivers L2 de dispositivo para MCU: **NOR SPI, FRAM SPI/I²C, EEPROM SPI/I²C, flash interna y SD-SPI**, con barrera WOB y timeouts acotados. Autodetección JEDEC (`0x9F`). |
+
+**Clases soportadas** (`arch_class`): `0`=8-bit, `1`=16-bit, `2`=32-bit, `3`=64-bit
+y `MFS_ARCH_AUTO` (0xFF) = autodetectar. La clase gobierna la familia de modos
+(8-bit Ultra/Nano/Compact vs clásica Ultra-Nano…Extended) y el reparto de RAM.
+
+**Autoconfiguración** (`mfs_arch.c`): clasifica la arquitectura, detecta
+capacidades (`MFS_HWACCEL_CRC32C/AES/SHA256/CLMUL/SIMD/RNG/ATOMICS`) y ajusta la
+clase, el presupuesto de RAM (8-bit) y la velocidad de bus. La **única ruta
+acelerada efectiva hoy es CRC-32C** (x86 SSE4.2 / ARMv8 CRC32, resultado idéntico
+a la tabla); el resto se reporta para diagnóstico y no se declara en el HWV,
+porque el HWV sólo anuncia lo que el núcleo puede ejecutar (MFS-HW-001).
 
 **Modos 8-bit** (familia independiente, elegidos automáticamente si
 `arch_class == 0`):
@@ -119,8 +130,8 @@ dimensione pools y *scratch* al mínimo (§18.2, MFS-RES-001):
 Compilación de la capa 8-bit como librería:
 
 ```bash
-make 8bit                          # libmatrixfs_8bit.a
-cmake -DMATRIXFS_BUILD_8BIT=ON ..  # equivalente
+make mcu                          # libmatrixfs_mcu.a (drivers L2 de MCU)
+cmake -DMATRIXFS_BUILD_MCU=ON ..  # equivalente
 ```
 
 Los subsistemas pesados y opcionales (PQ/LMS, SDP, ZRP, dedup, CDC) no se
@@ -197,8 +208,9 @@ protocolo VFS de MicroPython: convive con LittleFS, no lo sustituye en
 
 | Componente | Estado |
 |---|---|
-| Capa común `platform/embedded` | ✅ **Verificada en host**: formato + montaje + E/S (`/boot.log`, 23 B) + persistencia tras remontaje sobre `sim/vflash.c`. |
-| Modos 8-bit, detección y comparaciones de familia | ✅ **Verificados en host** por la suite (§27): 1 134 checks / 0 fallos. |
+| Capa `platform/embedded` | ✅ **Verificada en host**: formato + montaje + E/S (`/boot.log`, 23 B) + persistencia tras remontaje sobre `sim/vflash.c`. |
+| Arquitectura, 64-bit y aceleración HW (`mfs_arch.c`) | ✅ **Verificados en host**: clase detectada `64-bit`, `crc_hw=1` (SSE4.2) y CRC acelerado idéntico a la tabla y al KAT. |
+| Modos 8-bit, detección y comparaciones de familia | ✅ **Verificados en host** por la suite (§27): 1 147 checks / 0 fallos. |
 | `mf_t` en build 8-bit | ✅ Medido en host: ≈ 1 840 B ≤ 2 KB. |
-| Capa `platform/8bit` (puerto/drivers/detección) | ✅ Compila sin avisos en host (rama genérica). ⏳ Sin compilar con `avr-gcc`/`sdcc`/`xc8` reales. |
+| Puerto (`src/core/mfs_port_arch.c`) y drivers MCU (`platform/common/mfs_l2_8bit.c`) | ✅ Compilan sin avisos en host (rama genérica). ⏳ Sin compilar con `avr-gcc`/`sdcc`/`xc8` reales. |
 | Arduino / ESP-IDF / PlatformIO / MicroPython | ⏳ Estructura de build y código revisados por inspección estática; **sin compilar con los SDK de terceros** en este repositorio. |

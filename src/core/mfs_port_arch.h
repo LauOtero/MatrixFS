@@ -1,15 +1,15 @@
-/* mfs_port_8bit.h — MatrixFS Ultra 8-bit Port Abstraction Layer
+/* mfs_port_arch.h — MatrixFS Ultra: capa de puerto del núcleo (8/16/32/64 bits)
  *
- * Capa de abstracción unificada para arquitecturas de 8 bits (AVR, 8051, STM8,
- * PIC16/18). Proporciona primitivas de sección crítica, tiempo, ciclos y WFI
- * deterministas.
- *
- * Cada arquitectura implementa mfs_port_8bit_ops con sus primitivas nativas.
- * La detección automática selecciona el ops correcto en mfs_port_8bit_init().
+ * Forma parte del NÚCLEO (MFS-ARCH-010 rev. 3). Provee las primitivas de
+ * puerto del contrato §20.2 (sección crítica, ciclos, tiempo, WFI) con una
+ * implementación por familia de arquitectura, seleccionada por macros del
+ * compilador, más un *fallback* C genérico. Los objetivos de 8 bits (AVR, 8051,
+ * STM8, PIC16/18, Z80) usan sus registros nativos; 16/32/64 bits usan el
+ * *fallback* genérico o el puerto que aporte el integrador.
  */
 
-#ifndef MFS_PORT_8BIT_H
-#define MFS_PORT_8BIT_H
+#ifndef MFS_PORT_ARCH_H
+#define MFS_PORT_ARCH_H
 
 #include "matrixfs/mfs_port.h"
 
@@ -54,7 +54,7 @@ extern "C" {
 #define MFS_8BIT_ARCH_GENERIC 1
 
 /* ==== Estructura de operaciones por arquitectura ==== */
-typedef struct mfs_port_8bit_ops {
+typedef struct mfs_port_arch_ops {
   /* Sección crítica: latencia ≤ 1 µs, nesting-safe */
   void (*crit_enter)(void);
   void (*crit_exit)(void);
@@ -77,24 +77,24 @@ typedef struct mfs_port_8bit_ops {
   /* Flags de capacidad: bit 0 = tiene HW CRC, bit 1 = tiene HW RNG, bit 2 =
    * tiene EEPROM interna */
   uint8_t caps;
-} mfs_port_8bit_ops;
+} mfs_port_arch_ops;
 
 /* ==== API pública ==== */
 
 /* Inicializa el puerto 8-bit: detecta arquitectura y registra ops en mfs_port.h
  */
-mfs_st mfs_port_8bit_init(const mfs_config *cfg);
+mfs_st mfs_port_arch_init(const mfs_config *cfg);
 
 /* Obtiene los ops de la arquitectura actual (para diagnóstico) */
-const mfs_port_8bit_ops *mfs_port_8bit_get_ops(void);
+const mfs_port_arch_ops *mfs_port_arch_get_ops(void);
 
 /* Fuerza una arquitectura específica (para testing/simulación) */
-mfs_st mfs_port_8bit_set_arch(uint8_t arch_id);
+mfs_st mfs_port_arch_set_arch(uint8_t arch_id);
 
 /* ==== Helpers atómicos para 8-bit (implementación por defecto) ==== */
 
 /* Enter critical: deshabilita interrupciones globalmente */
-static inline void mfs_port_8bit_crit_enter_default(void) {
+static inline void mfs_port_arch_crit_enter_default(void) {
 #if MFS_8BIT_ARCH_AVR
   __builtin_avr_cli();
 #elif MFS_8BIT_ARCH_8051
@@ -111,7 +111,7 @@ static inline void mfs_port_8bit_crit_enter_default(void) {
 }
 
 /* Exit critical: habilita interrupciones */
-static inline void mfs_port_8bit_crit_exit_default(void) {
+static inline void mfs_port_arch_crit_exit_default(void) {
 #if MFS_8BIT_ARCH_AVR
   __builtin_avr_sei();
 #elif MFS_8BIT_ARCH_8051
@@ -130,4 +130,4 @@ static inline void mfs_port_8bit_crit_exit_default(void) {
 }
 #endif
 
-#endif /* MFS_PORT_8BIT_H */
+#endif /* MFS_PORT_ARCH_H */

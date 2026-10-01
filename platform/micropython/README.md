@@ -63,7 +63,7 @@ platform/embedded/mfs_embedded.c
 
 Añádelas a `SRC_USERMOD` (líneas ya presentes, comentadas, en
 `micropython.mk`) o al build del port. **No** compiles `sim/mfs_port_host.c`
-ni `platform/8bit/mfs_port_8bit.c` en el mismo binario: las primitivas de
+ni `src/core/mfs_port_arch.c` en el mismo binario: las primitivas de
 puerto las aporta `modmatrixfs.c` y habría símbolos duplicados.
 
 ### Configuración del port

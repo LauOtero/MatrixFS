@@ -101,7 +101,7 @@ static const uint32_t crc32c_nib[16] = {
     0x82F63B78u, 0x92A8FC17u, 0xA24BB5A6u, 0xB21572C9u,
     0xC38D26C4u, 0xD3D3E1ABu, 0xE330A81Au, 0xF36E6F75u};
 
-uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
+static uint32_t crc32c_sw(const uint8_t *buf, uint32_t len, uint32_t seed) {
   uint32_t c = ~seed;
   for (uint32_t i = 0; i < len; i++) {
     c ^= buf[i];
@@ -125,7 +125,7 @@ static void crc32c_init(void) {
   crc32c_ready = true;
 }
 
-uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
+static uint32_t crc32c_sw(const uint8_t *buf, uint32_t len, uint32_t seed) {
   if (!crc32c_ready)
     crc32c_init();
   uint32_t c = ~seed;
@@ -135,6 +135,15 @@ uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
   return ~c;
 }
 #endif /* MFS_IS_8BIT_TARGET */
+
+uint32_t mfs_crc32c(const uint8_t *buf, uint32_t len, uint32_t seed) {
+  /* Ruta acelerada por hardware si la CPU expone la instrucción CRC-32C
+   * (x86 SSE4.2 / ARMv8 CRC32 usan el mismo polinomio de Castagnoli que esta
+   * tabla ⇒ resultado idéntico bit a bit; ver src/core/mfs_arch.c). */
+  if (mfs_arch_crc32c_hw_available())
+    return mfs_crc32c_hw(buf, len, seed);
+  return crc32c_sw(buf, len, seed);
+}
 
 /* HWV serialización on-flash (§5.2) — accesores LE exclusivos (§20.4) */
 void mfs_hwv_serialize(const mfs_hwv_t *h, uint8_t out[64]) {
@@ -202,9 +211,9 @@ mfs_st mfs_hwv_validate(const mfs_hwv_t *h) {
       h->magic[3] != 'V') {
     return MFS_ECORRUPT;
   }
-  /* MFS-ARCH-010 rev.2: arch_class 0=8-bit (permitido con
-   * MFS_ALLOW_8BIT_TARGET), 1=16-bit, 2=32-bit; >2 ⇒ rechazo */
-  if (h->arch_class > 2u)
+  /* MFS-ARCH-010 rev.3: 0=8-bit, 1=16-bit, 2=32-bit, 3=64-bit son válidos;
+   * cualquier otra clase (incl. AUTO sin resolver) ⇒ rechazo tipificado. */
+  if (h->arch_class > (uint8_t)MFS_ARCH_64BIT)
     return MFS_EARCH;
   /* Verificación de integridad: recomputar CRC sobre la representación
    * canónica y comparar con el campo persistido. */

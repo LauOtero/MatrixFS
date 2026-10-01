@@ -1,7 +1,8 @@
-/* mfs_port_8bit.c — Implementación del puerto 8-bit unificado
+/* mfs_port_arch.c — Implementación del puerto del núcleo (8/16/32/64 bits)
  *
- * Auto-detecta la arquitectura (AVR, 8051, STM8, PIC, Z80, Generic)
- * y provee primitivas deterministas para MatrixFS Ultra.
+ * Auto-detecta la familia de arquitectura (AVR, 8051, STM8, PIC16/18, Z80 o
+ * genérica) y provee primitivas deterministas de sección crítica, ciclos,
+ * tiempo y WFI para el contrato de puerto de MatrixFS (§20.2).
  *
  * Reglas de codificación (MFS-ARCH-010 rev.2):
  *   - C puro (sin lambdas ni extensiones C++)
@@ -10,34 +11,34 @@
  *   - Determinismo: sin dependencia de estado no inicializado
  */
 
-#include "mfs_port_8bit.h"
+#include "mfs_port_arch.h"
 #include "matrixfs/mfs_port.h"
 #include <string.h>
 
 /* ==== Estado global del puerto 8-bit ==== */
-static const mfs_port_8bit_ops *g_port8_ops = NULL;
+static const mfs_port_arch_ops *g_port_arch_ops = NULL;
 static uint8_t g_forced_arch = 0xFF;
 
 /* ==== Declaraciones forward de ops por arquitectura ==== */
 #if MFS_8BIT_ARCH_AVR
-extern const mfs_port_8bit_ops mfs_port_avr_ops;
+extern const mfs_port_arch_ops mfs_port_avr_ops;
 #endif
 #if MFS_8BIT_ARCH_8051
-extern const mfs_port_8bit_ops mfs_port_8051_ops;
+extern const mfs_port_arch_ops mfs_port_8051_ops;
 #endif
 #if MFS_8BIT_ARCH_STM8
-extern const mfs_port_8bit_ops mfs_port_stm8_ops;
+extern const mfs_port_arch_ops mfs_port_stm8_ops;
 #endif
 #if MFS_8BIT_ARCH_PIC
-extern const mfs_port_8bit_ops mfs_port_pic_ops;
+extern const mfs_port_arch_ops mfs_port_pic_ops;
 #endif
 #if MFS_8BIT_ARCH_Z80
-extern const mfs_port_8bit_ops mfs_port_z80_ops;
+extern const mfs_port_arch_ops mfs_port_z80_ops;
 #endif
-extern const mfs_port_8bit_ops mfs_port_generic_ops;
+extern const mfs_port_arch_ops mfs_port_generic_ops;
 
 /* ==== Tabla de arquitecturas soportadas ==== */
-static const mfs_port_8bit_ops *const arch_table[] = {
+static const mfs_port_arch_ops *const arch_table[] = {
 #if MFS_8BIT_ARCH_AVR
     &mfs_port_avr_ops,
 #endif
@@ -81,7 +82,7 @@ static void generic_wfi(void) {
   __asm__ volatile("nop");
 }
 
-const mfs_port_8bit_ops mfs_port_generic_ops = {
+const mfs_port_arch_ops mfs_port_generic_ops = {
     generic_crit_enter, generic_crit_exit,
     generic_cycles,     generic_time_us,
     generic_wfi,        0xFEu,
@@ -129,7 +130,7 @@ static void avr_wfi(void) {
   sleep_mode();
 }
 
-const mfs_port_8bit_ops mfs_port_avr_ops = {
+const mfs_port_arch_ops mfs_port_avr_ops = {
     avr_crit_enter,
     avr_crit_exit,
     avr_cycles,
@@ -180,7 +181,7 @@ static uint32_t mfs_8051_time_us(void) {
 
 static void mfs_8051_wfi(void) { PCON |= 0x01u; /* IDL: idle mode */ }
 
-const mfs_port_8bit_ops mfs_port_8051_ops = {
+const mfs_port_arch_ops mfs_port_8051_ops = {
     mfs_8051_crit_enter, mfs_8051_crit_exit,
     mfs_8051_cycles,     mfs_8051_time_us,
     mfs_8051_wfi,        2u,
@@ -214,7 +215,7 @@ static uint32_t stm8_time_us(void) {
 
 static void stm8_wfi(void) { __asm__("wfi"); }
 
-const mfs_port_8bit_ops mfs_port_stm8_ops = {
+const mfs_port_arch_ops mfs_port_stm8_ops = {
     stm8_crit_enter, stm8_crit_exit, stm8_cycles, stm8_time_us, stm8_wfi, 3u,
     "STM8",          0x04u /* EEPROM interna */};
 #endif /* MFS_8BIT_ARCH_STM8 */
@@ -245,7 +246,7 @@ static void pic_wfi(void) {
   NOP();
 }
 
-const mfs_port_8bit_ops mfs_port_pic_ops = {
+const mfs_port_arch_ops mfs_port_pic_ops = {
     pic_crit_enter, pic_crit_exit, pic_cycles, pic_time_us, pic_wfi, 4u,
     "PIC16/18",     0x04u /* EEPROM interna (PFM/DFM) */};
 #endif /* MFS_8BIT_ARCH_PIC */
@@ -260,55 +261,55 @@ static uint32_t z80_cycles(void) { return mfs_z80_cycles++; }
 static uint32_t z80_time_us(void) { return mfs_z80_cycles; }
 static void z80_wfi(void) { __asm__("halt"); }
 
-const mfs_port_8bit_ops mfs_port_z80_ops = {z80_crit_enter, z80_crit_exit,
+const mfs_port_arch_ops mfs_port_z80_ops = {z80_crit_enter, z80_crit_exit,
                                             z80_cycles,     z80_time_us,
                                             z80_wfi,        5u,
                                             "Z80",          0u};
 #endif /* MFS_8BIT_ARCH_Z80 */
 
 /* ==== Auto-detección e inicialización ==== */
-mfs_st mfs_port_8bit_init(const mfs_config *cfg) {
+mfs_st mfs_port_arch_init(const mfs_config *cfg) {
   (void)cfg; /* Reservado para futuras opciones (prescaler, timer, etc.) */
 
   if (g_forced_arch != 0xFFu) {
     for (uint8_t i = 0; arch_table[i] != NULL; i++) {
       if (arch_table[i]->arch_id == g_forced_arch) {
-        g_port8_ops = arch_table[i];
+        g_port_arch_ops = arch_table[i];
         break;
       }
     }
-    if (!g_port8_ops)
+    if (!g_port_arch_ops)
       return MFS_EINVAL;
   } else {
     /* Auto-detección por macros de compilador */
 #if MFS_8BIT_ARCH_AVR
-    g_port8_ops = &mfs_port_avr_ops;
+    g_port_arch_ops = &mfs_port_avr_ops;
 #elif MFS_8BIT_ARCH_8051
-    g_port8_ops = &mfs_port_8051_ops;
+    g_port_arch_ops = &mfs_port_8051_ops;
 #elif MFS_8BIT_ARCH_STM8
-    g_port8_ops = &mfs_port_stm8_ops;
+    g_port_arch_ops = &mfs_port_stm8_ops;
 #elif MFS_8BIT_ARCH_PIC
-    g_port8_ops = &mfs_port_pic_ops;
+    g_port_arch_ops = &mfs_port_pic_ops;
 #elif MFS_8BIT_ARCH_Z80
-    g_port8_ops = &mfs_port_z80_ops;
+    g_port_arch_ops = &mfs_port_z80_ops;
 #else
-    g_port8_ops = &mfs_port_generic_ops;
+    g_port_arch_ops = &mfs_port_generic_ops;
 #endif
   }
 
-  if (!g_port8_ops)
+  if (!g_port_arch_ops)
     return MFS_EINVAL;
 
   return MFS_OK;
 }
 
-const mfs_port_8bit_ops *mfs_port_8bit_get_ops(void) { return g_port8_ops; }
+const mfs_port_arch_ops *mfs_port_arch_get_ops(void) { return g_port_arch_ops; }
 
-mfs_st mfs_port_8bit_set_arch(uint8_t arch_id) {
+mfs_st mfs_port_arch_set_arch(uint8_t arch_id) {
   for (uint8_t i = 0; arch_table[i] != NULL; i++) {
     if (arch_table[i]->arch_id == arch_id) {
       g_forced_arch = arch_id;
-      g_port8_ops = arch_table[i];
+      g_port_arch_ops = arch_table[i];
       return MFS_OK;
     }
   }
@@ -318,33 +319,33 @@ mfs_st mfs_port_8bit_set_arch(uint8_t arch_id) {
 /* ==== Wrappers para mfs_port.h (API global) ====
  * Solo se compilan en el build de target 8-bit. En host (tests de la lógica de
  * detección/selección) mfs_port_host.c ya aporta estas primitivas, así que se
- * desactivan para evitar símbolos duplicados. Definir MFS_8BIT_PORT_GLUE=1 en
+ * desactivan para evitar símbolos duplicados. Definir MFS_PORT_ARCH_GLUE=1 en
  * el build de target. */
-#ifdef MFS_8BIT_PORT_GLUE
+#ifdef MFS_PORT_ARCH_GLUE
 void mfs_port_crit_enter(void) {
-  if (g_port8_ops && g_port8_ops->crit_enter)
-    g_port8_ops->crit_enter();
+  if (g_port_arch_ops && g_port_arch_ops->crit_enter)
+    g_port_arch_ops->crit_enter();
 }
 
 void mfs_port_crit_exit(void) {
-  if (g_port8_ops && g_port8_ops->crit_exit)
-    g_port8_ops->crit_exit();
+  if (g_port_arch_ops && g_port_arch_ops->crit_exit)
+    g_port_arch_ops->crit_exit();
 }
 
 uint32_t mfs_port_cycles(void) {
-  if (g_port8_ops && g_port8_ops->cycles)
-    return g_port8_ops->cycles();
+  if (g_port_arch_ops && g_port_arch_ops->cycles)
+    return g_port_arch_ops->cycles();
   return 0u;
 }
 
 uint32_t mfs_port_time_us(void) {
-  if (g_port8_ops && g_port8_ops->time_us)
-    return g_port8_ops->time_us();
+  if (g_port_arch_ops && g_port_arch_ops->time_us)
+    return g_port_arch_ops->time_us();
   return 0u;
 }
 
 void mfs_port_wfi(void) {
-  if (g_port8_ops && g_port8_ops->wfi)
-    g_port8_ops->wfi();
+  if (g_port_arch_ops && g_port_arch_ops->wfi)
+    g_port_arch_ops->wfi();
 }
-#endif /* MFS_8BIT_PORT_GLUE */
+#endif /* MFS_PORT_ARCH_GLUE */

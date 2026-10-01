@@ -51,8 +51,19 @@ static void geom_defaults(mfs_media_geom *g) {
 
 mfs_st mfs_hal_detect(mf_t *fs, const mfs_config *cfg, mfs_hwv_t *out) {
   mfs_media_geom g;
+  mfs_arch_info_t ai;
+  uint8_t cls;
   memset(&g, 0, sizeof(g));
+  memset(&ai, 0, sizeof(ai));
   bool have_geom = false;
+
+  /* MFS-ARCH-010 rev.3: clase de arquitectura — autodetección si el integrador
+   * declara MFS_ARCH_AUTO; en otro caso se respeta su declaración. */
+  (void)mfs_arch_detect(&ai);
+  cls = (cfg->arch_class == (uint8_t)MFS_ARCH_AUTO) ? ai.arch_class
+                                                    : cfg->arch_class;
+  if (cls > (uint8_t)MFS_ARCH_64BIT)
+    return MFS_EARCH;
 
   if (cfg->geom) {
     g = *cfg->geom;
@@ -77,14 +88,17 @@ mfs_st mfs_hal_detect(mf_t *fs, const mfs_config *cfg, mfs_hwv_t *out) {
   out->magic[1] = 'H';
   out->magic[2] = 'W';
   out->magic[3] = 'V';
-  /* arch_class: 0=8-bit, 1=16-bit, 2=32-bit (MFS-ARCH-010 rev.2). Se copia tal
-   * cual: el integrador DEBE declararlo explícitamente (no hay valor "auto").
-   */
-  out->arch_class = cfg->arch_class;
+  /* arch_class resuelto (0=8-bit, 1=16-bit, 2=32-bit, 3=64-bit) */
+  out->arch_class = cls;
   out->mode_forced = (cfg->forced_mode == MFS_MODE_UNSUPPORTED)
                          ? 0xFFu
                          : (uint8_t)cfg->forced_mode;
   out->ram_total = cfg->ram_total;
+  /* En MCU de 8 bits, si el integrador no declara RAM se usa la cota detectada
+   * (§6.1); en 16/32/64 bits el presupuesto lo declara siempre el integrador.
+   */
+  if (out->ram_total == 0u && cls == (uint8_t)MFS_ARCH_8BIT)
+    out->ram_total = ai.ram_total;
   out->program_granularity = g.program_granularity ? g.program_granularity : 1u;
   out->erase_unit = g.erase_unit ? g.erase_unit : 4096u;
   /* El layout reserva sectores completos para SB/HWV/tokens: se exige un

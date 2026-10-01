@@ -1,10 +1,11 @@
 /* mfs_types.h — MatrixFS Ultra «ATLAS» v1.0 — tipos básicos, estados y límites
  *
  * Referencias normativas:
- *   §3.1  MFS-ARCH-010 (soporte de arquitecturas de 8/16/32 bits con
- * MFS_ALLOW_8BIT_TARGET) §7.4  Errores tipificados §18.2 Límites por modo §25
- * Tabla de constantes normativas §20.1 Reglas de codificación (C11, <stdint.h>,
- * sin números mágicos sueltos)
+ *   §3.1  MFS-ARCH-010 rev.3 (clases de arquitectura 8/16/32/64 bits)
+ *   §7.4  Errores tipificados
+ *   §18.2 Límites por modo
+ *   §25   Tabla de constantes normativas
+ *   §20.1 Reglas de codificación (C11, <stdint.h>, sin números mágicos sueltos)
  */
 #ifndef MATRIXFS_MFS_TYPES_H
 #define MATRIXFS_MFS_TYPES_H
@@ -13,16 +14,60 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ---- Detección de arquitectura y capacidad 8-bit (MFS-ARCH-010 rev. 2) ----
- */
-/* Define MFS_ALLOW_8BIT_TARGET=1 en la línea de comandos del compilador
- * (-DMFS_ALLOW_8BIT_TARGET=1) para habilitar objetivos de 8 bits.
- * Sin esta definición, se mantiene la comprobación estricta original. */
+/* ==== Clases de arquitectura (MFS-ARCH-010 rev. 3) ======================
+ * MatrixFS se adapta a objetivos de 8, 16, 32 y 64 bits. La clase es un dato
+ * del HWV (§5.2) y gobierna la selección de modo y el reparto de RAM (§6.1).
+ * La detección es automática (src/core/mfs_arch.c); el integrador puede
+ * forzarla declarando cfg->arch_class.
+ * ======================================================================== */
+typedef enum {
+  MFS_ARCH_8BIT = 0,
+  MFS_ARCH_16BIT = 1,
+  MFS_ARCH_32BIT = 2,
+  MFS_ARCH_64BIT = 3,
+  MFS_ARCH_AUTO = 0xFF /* cfg.arch_class ⇒ autodetectar */
+} mfs_arch_class_t;
+
+/* Capacidades de aceleración por hardware detectadas (MFS-HW-001).
+ * La ausencia de un bit ⇒ se usa la ruta software equivalente (misma API y
+ * mismo resultado, MFS-HW-001). */
+#define MFS_HWACCEL_NONE 0x0000u
+#define MFS_HWACCEL_CRC32C                                                     \
+  0x0001u                       /* CRC-32C por instrucción (SSE4.2 / ARMv8) */
+#define MFS_HWACCEL_AES 0x0002u /* AES por hardware */
+#define MFS_HWACCEL_SHA256                                                     \
+  0x0004u /* SHA-256 por hardware                      */
+#define MFS_HWACCEL_CLMUL                                                      \
+  0x0008u /* multiplicación carry-less (GHASH/CRC)     */
+#define MFS_HWACCEL_BLAKE3                                                     \
+  0x0010u /* acelerador BLAKE3                         */
+#define MFS_HWACCEL_ASCON                                                      \
+  0x0020u                        /* acelerador Ascon (§10.6 S2)               */
+#define MFS_HWACCEL_DMA 0x0040u  /* DMA + CRC de transporte (§14.1)  */
+#define MFS_HWACCEL_RNG 0x0080u  /* TRNG/NRBG por hardware (§15)  */
+#define MFS_HWACCEL_SIMD 0x0100u /* vectorización (NEON/AVX/SSE) */
+#define MFS_HWACCEL_ATOMICS                                                    \
+  0x0200u /* CAS/CMPXCHG atómicos (§13 RT)             */
+
+/* Foto de la arquitectura y sus capacidades, producida por mfs_arch_detect() */
+typedef struct {
+  uint8_t arch_class; /* mfs_arch_class_t (0..3)     */
+  uint8_t bits;       /* 8 | 16 | 32 | 64            */
+  uint16_t hwaccel;   /* MFS_HWACCEL_* detectados    */
+  uint32_t ram_total;
+  uint32_t flash_size;
+  uint32_t eeprom_size;
+  uint32_t f_cpu_hz;
+  const char *name; /* nombre legible (diagnóstico) */
+} mfs_arch_info_t;
+
+/* ==== Detección de arquitectura en tiempo de compilación ====
+ * Los objetivos de 8 bits exigen opt-in explícito (MFS_ALLOW_8BIT_TARGET=1);
+ * el resto (16/32/64 bits) se detectan solos. */
 #if defined(__CHAR_BIT__) && (__CHAR_BIT__ != 8)
 #error "MFS-ARCH-010: arquitectura con CHAR_BIT != 8 no soportada"
 #endif
 
-/* Detección automática de arquitecturas 8-bit conocidas */
 #if !defined(MFS_ALLOW_8BIT_TARGET)
 #if defined(__AVR__) || defined(__CSMC__) || defined(SDCC_mcs51) ||            \
     defined(__SDCC_mcs51) || defined(_PIC14) || defined(_PIC18) ||             \
@@ -47,6 +92,21 @@
 #include <limits.h>
 #if (UINT_MAX < 0xFFFFu)
 #error "MFS-ARCH-010: se exige int >= 16 bits"
+#endif
+
+/* Clase por defecto del objetivo (usada cuando cfg->arch_class ==
+ * MFS_ARCH_AUTO) */
+#if MFS_IS_8BIT_TARGET
+#define MFS_ARCH_CLASS_DEFAULT MFS_ARCH_8BIT
+#elif defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ >= 8)
+#define MFS_ARCH_CLASS_DEFAULT MFS_ARCH_64BIT
+#elif defined(_WIN64) || defined(__LP64__) || defined(__x86_64__) ||           \
+    defined(__aarch64__) || defined(__riscv_xlen) && (__riscv_xlen == 64)
+#define MFS_ARCH_CLASS_DEFAULT MFS_ARCH_64BIT
+#elif (UINT_MAX == 0xFFFFu)
+#define MFS_ARCH_CLASS_DEFAULT MFS_ARCH_16BIT
+#else
+#define MFS_ARCH_CLASS_DEFAULT MFS_ARCH_32BIT
 #endif
 
 #ifdef __cplusplus

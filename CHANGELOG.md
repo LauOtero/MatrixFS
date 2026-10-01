@@ -8,17 +8,22 @@ Las entradas referencian secciones de la especificación normativa **MFS-SPEC-00
 
 ## [Unreleased]
 
-### Añadido — MCU de 8 bits (MFS-ARCH-010 rev. 2) y ecosistemas embebidos
-- 🟪 **Soporte de MCU de 8 bits**: se admite `arch_class = 0` en runtime (8/16/32 bits); sólo se rechaza una clase desconocida (`> 2`) con `MFS_EARCH`. Nuevos modos **8-bit Ultra/Nano/Compact** (512 B / 1 KB / 2 KB) con chunk de 64/128/256 B, elegidos automáticamente por `mfs_select_mode()` cuando `arch_class == 0`.
-  - **`platform/8bit/`**: primitivas de puerto por arquitectura (**AVR, 8051, STM8, PIC16/18, Z80** + genérico) con autodetección por macros; drivers L2 (**NOR SPI, FRAM SPI/I2C, EEPROM SPI/I2C, flash interna, SD-SPI**) con barrera WOB y timeouts acotados; **autodetección de capacidades** del MCU y autoadaptación de `mfs_config`.
-  - **Mínima RAM**: CRC-32C con tabla de *nibble* (64 B en `.rodata` en vez de 1 KiB en `.bss`, mismo resultado bit a bit) y dimensionado condicional de pools/scratch con `MFS_ALLOW_8BIT_TARGET` (`mf_t` ≈ 17 KB → ≈ 1.8 KB; `MFS_SCRATCH_MAX` 4096 → 256 B).
-  - 🐞 **Corregidas** comparaciones de modo que asumían orden monótono (`mode >= MFS_MODE_EXTENDED`, etc.) y que habrían aplicado semántica de 16/32 bits a los modos 8-bit; nuevas funciones de familia `mfs_mode_is_8bit()` / `mfs_mode_classic_ge()`.
+### Añadido — Arquitecturas 8/16/32/64-bit en el núcleo (MFS-ARCH-010 rev. 3) y ecosistemas embebidos
+- 🟪 **Modelo de arquitectura unificado en el núcleo**: el soporte de 8 bits deja de ser una capa aparte y pasa a integrarse como las clases de 16 y 32 bits, y se añade **64 bits**.
+  - **`src/core/mfs_arch.c`** (nuevo): clasifica el objetivo en **8/16/32/64 bits** (o `MFS_ARCH_AUTO` = autodetección) y **detecta y autoconfigura la aceleración por hardware** (`MFS_HWACCEL_CRC32C/AES/SHA256/CLMUL/SIMD/RNG/ATOMICS`) combinando macros del compilador con refinado en runtime (x86 `__builtin_cpu_supports`/CPUID). `mfs_arch_info_t`, `mfs_arch_class_t` y `MFS_ARCH_AUTO` viven en `include/matrixfs/mfs_types.h`.
+  - **Aceleración efectiva de CRC-32C**: `mfs_crc32c()` usa automáticamente la instrucción CRC32 (x86 SSE4.2 en GCC/Clang con atributo `target("sse4.2")`, y ARMv8 `__crc32cb/cd`) cuando la CPU la expone, con **resultado idéntico bit a bit** a la tabla software (mismo polinomio de Castagnoli). El resto de capacidades se reportan para diagnóstico y **no se declaran en el HWV** (MFS-HW-001: nunca anunciar lo que no se puede ejecutar).
+  - **`src/core/mfs_port_arch.{h,c}`** (nuevo): el puerto §20.2 con implementación por arquitectura — **AVR, 8051, STM8, PIC16/18, Z80** y *fallback* C genérico (16/32/64 bits) — pasa a formar parte del núcleo.
+  - **`platform/common/mfs_l2_8bit.{h,c}`**: los drivers L2 de dispositivo (NOR/FRAM/EEPROM SPI-I²C, flash interna, SD-SPI) se mueven a la capa común de dispositivo. Se elimina `platform/8bit/` (el puerto y la detección viven ya en el núcleo).
+  - **Modos 8-bit** (Ultra 512 B / Nano 1 KB / Compact 2 KB) elegidos automáticamente si `arch_class == 0`; en 8-bit no hay AEAD (integridad CRC-32C con tabla de *nibble* de 64 B).
+  - **Mínima RAM**: dimensionado condicional de pools y *scratch* con `MFS_ALLOW_8BIT_TARGET` (`mf_t` ≈ 17 KB → ≈ 1.8 KB; `MFS_SCRATCH_MAX` 4096 → 256 B).
+  - 🐞 **Corregidas** comparaciones de modo que asumían orden monótono (`mode >= MFS_MODE_EXTENDED`, etc.); nuevas funciones de familia `mfs_mode_is_8bit()` / `mfs_mode_classic_ge()`.
 - 🔌 **Integraciones embebidas** (capa común `platform/embedded/` + envoltorios):
   - **`platform/embedded/`**: driver L2 sobre una región de flash plana y helpers `mfs_embedded_{setup,mount,format}` con formateo opcional.
   - **`platform/arduino/`**: librería C++ `MatrixFS` (ESP32/ESP8266/RP2040) + ejemplos; **`platform/platformio/`**: proyecto de ejemplo; **`platform/esp-idf/`**: componente externo sobre `esp_partition` con `Kconfig`; **`platform/micropython/`**: usermod con el módulo `matrixfs`.
-- 🛠️ **Build**: `make 8bit` / `-DMATRIXFS_BUILD_8BIT=ON` (CMake) para la capa 8-bit; `mfstool plan` ahora cubre los 8 modos.
+- 🛠️ **Build**: `make mcu` / `-DMATRIXFS_BUILD_MCU=ON` (CMake) para los drivers de MCU; el puerto y el modelo de arquitectura los aporta ya el núcleo (`src/core/*.c`, incluidos por el glob). `mfstool plan` cubre los 8 modos.
 - 📘 **Documentación**: nueva guía [DOCS/embedded-integration.md](DOCS/embedded-integration.md) y actualización de `README.md`, `DOCS/README.md`, `DOCS/hal.md` y `DOCS/testing.md`.
-- ✅ **Verificación**: suite ampliada a **1 134 checks / 0 fallos** (host Windows, gcc 16.1, `-Wall -Wextra`); capa `platform/embedded` validada de extremo a extremo sobre `sim/vflash.c` (formato, montaje, E/S y persistencia tras remontaje). Pendiente: compilación con toolchains/SDK de terceros reales (avr-gcc, sdcc, xc8, Arduino-ESP32, ESP-IDF, MicroPython).
+- ✅ **Verificación**: suite ampliada a **1 147 checks / 0 fallos** (host Windows, gcc 16.1, `-Wall -Wextra`); capa `platform/embedded` validada de extremo a extremo sobre `sim/vflash.c`; en host se confirma la autodetección de **64 bits (arch_class 3)**, `crc_hw=1` (SSE4.2) y que el **CRC-32C acelerado coincide con la tabla y con el KAT**. Pendiente: compilación con toolchains/SDK de terceros reales (avr-gcc, sdcc, xc8, Arduino-ESP32, ESP-IDF, MicroPython).
+
 
 ### Reconstruido — ficheros de soporte y verificación final
 Tras una pérdida accidental del árbol de trabajo, se recompusieron contra sus

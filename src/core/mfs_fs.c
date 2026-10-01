@@ -771,9 +771,10 @@ int mf_format(mf_t *fs, const void *opts) {
   if (fs == NULL || fs->cfg == NULL)
     return MFS_EINVAL;
   const mfs_config *cfg = fs->cfg;
-  /* MFS-ARCH-010 rev.2: 0=8-bit, 1=16-bit, 2=32-bit son válidos; >2 se rechaza
-   */
-  if (cfg->arch_class > 2u)
+  /* MFS-ARCH-010 rev.3: clases 8/16/32/64-bit válidas; MFS_ARCH_AUTO se
+   * resuelve en mfs_hal_detect(). Cualquier otra ⇒ rechazo. */
+  if (cfg->arch_class != (uint8_t)MFS_ARCH_AUTO &&
+      cfg->arch_class > (uint8_t)MFS_ARCH_64BIT)
     return MFS_EARCH;
 
   memset(fs, 0, sizeof(*fs));
@@ -783,7 +784,7 @@ int mf_format(mf_t *fs, const void *opts) {
   mfs_st st = mfs_hal_detect(fs, cfg, &fs->hwv);
   if (st != MFS_OK)
     return st;
-  if (fs->hwv.arch_class > 2u) {
+  if (fs->hwv.arch_class > (uint8_t)MFS_ARCH_64BIT) {
     mfs_hct_event(fs, MFS_EV_ARCH_REJECT, 0);
     return MFS_EARCH;
   }
@@ -871,19 +872,23 @@ int mf_format(mf_t *fs, const void *opts) {
 int mf_init(mf_t *fs, const mfs_config *cfg) {
   if (fs == NULL || cfg == NULL || cfg->drv == NULL)
     return MFS_EINVAL;
-  /* MFS-ARCH-010 rev.2: se aceptan clases 0 (8-bit), 1 (16-bit) y 2 (32-bit);
-   * sólo se rechaza una clase desconocida (> 2). */
-  if (cfg->arch_class > 2u)
+  /* MFS-ARCH-010 rev.3: se aceptan las clases 8/16/32/64-bit y MFS_ARCH_AUTO
+   * (que se resuelve por detección); sólo se rechaza una clase desconocida. */
+  if (cfg->arch_class != (uint8_t)MFS_ARCH_AUTO &&
+      cfg->arch_class > (uint8_t)MFS_ARCH_64BIT)
     return MFS_EARCH;
   memset(fs, 0, sizeof(*fs));
   fs->cfg = cfg;
   g_mfs_instance = fs;
 
-  /* paso 1: detección (geometría autoritativa + capacidades) */
+  /* paso 1: detección (geometría autoritativa + capacidades + arquitectura) */
   mfs_st st = mfs_hal_detect(fs, cfg, &fs->hwv);
   if (st != MFS_OK)
     return st;
-  fs->hwv.arch_class = cfg->arch_class;
+  /* Si el integrador declaró la clase, prevalece; si fue AUTO, se conserva la
+   * clase resuelta por mfs_hal_detect(). */
+  if (cfg->arch_class != (uint8_t)MFS_ARCH_AUTO)
+    fs->hwv.arch_class = cfg->arch_class;
   fs->hwv.mode_forced = (cfg->forced_mode == MFS_MODE_UNSUPPORTED)
                             ? 0xFFu
                             : (uint8_t)cfg->forced_mode;
@@ -905,7 +910,7 @@ int mf_init(mf_t *fs, const mfs_config *cfg) {
       ph.media_size = fs->hwv.media_size;
       ph.erase_unit = fs->hwv.erase_unit;
       ph.program_granularity = fs->hwv.program_granularity;
-      ph.arch_class = cfg->arch_class;
+      ph.arch_class = fs->hwv.arch_class;
       ph.mode_forced = fs->hwv.mode_forced;
       if (cfg->ram_total)
         ph.ram_total = cfg->ram_total;

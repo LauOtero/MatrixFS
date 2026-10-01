@@ -481,6 +481,13 @@ mfs_st mfs_hal_detect(mf_t *fs, const mfs_config *cfg, mfs_hwv_t *out);
 /* Bus read-only (§14.2 MFS-BUS-001..004) */
 uint32_t mfs_bus_measure_hz(const mfs_l2_driver *drv, void *ctx);
 
+/* Arquitectura y aceleración HW (§3.1 MFS-ARCH-010 rev.3) — mfs_arch.c */
+mfs_st mfs_arch_detect(mfs_arch_info_t *out);
+mfs_st mfs_arch_adapt_config(const mfs_arch_info_t *info, mfs_config *cfg);
+const mfs_arch_info_t *mf_arch_last(void); /* último análisis (diagnóstico) */
+bool mfs_arch_crc32c_hw_available(void);   /* CRC-32C por instrucción */
+uint32_t mfs_crc32c_hw(const uint8_t *buf, uint32_t len, uint32_t seed);
+
 /* Flash helpers */
 mfs_st mfs_read(mf_t *fs, uint32_t addr, void *dst, uint32_t len);
 mfs_st mfs_write(mf_t *fs, uint32_t addr, const void *src,

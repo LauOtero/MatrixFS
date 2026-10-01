@@ -72,7 +72,7 @@ Añade los `.c` del núcleo como ficheros del sketch y activa las rutas de
 inclusión por placa; más frágil, no recomendado.
 
 > IMPORTANTE: no enlaces además `sim/mfs_port_host.c` ni
-> `platform/8bit/mfs_port_8bit.c` con `MFS_8BIT_PORT_GLUE`: este envoltorio ya
+> `src/core/mfs_port_arch.c` con `MFS_PORT_ARCH_GLUE`: este envoltorio ya
 > define `mfs_port_crit_enter/exit`, `mfs_port_cycles`, `mfs_port_time_us` y
 > `mfs_port_wfi`. Duplicarlas provoca error de enlazado.
 

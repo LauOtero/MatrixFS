@@ -354,7 +354,7 @@ MSVC 14.51 «VS 18 BuildTools» + SDK de WinFsp 2025, y MinGW-w64 GCC 11):
 
 | Prueba | Toolchain | Resultado |
 |---|---|---|
-| Suite completa del proyecto | MSVC 14.51 (`/W4`, CMake + VS 18 BuildTools) | ✅ **1 134 checks / 0 fallos** |
+| Suite completa del proyecto | MSVC 14.51 (`/W4`, CMake + VS 18 BuildTools) | ✅ **1 147 checks / 0 fallos** |
 | `test_vfs_portable` (formato, montaje, permisos, E/S, readdir, rename, truncado, statfs, verify, persistencia, sólo lectura, errno) | MSVC 14.51 | ✅ |
 | `matrixfs-ctl.exe` | **MSVC 14.51** | ✅ ciclo completo sobre imagen (`format`→`probe`→`mkdir`→`write`→`ls`→`cat`→`statfs`→`verify`) |
 | `matrixfs_automount.exe` | MSVC 14.51 | ✅ compila y enlaza |

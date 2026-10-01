@@ -19,7 +19,7 @@ que implementa.
 | [testing.md](testing.md) | Plan de verificación, resultados, CI | §27 |
 | [linux-integration.md](linux-integration.md) | Integración con Linux: FUSE 3, kernels, `fstab`, systemd/udev, paquetes | §21, §22 |
 | [windows-integration.md](windows-integration.md) | Integración con Windows 10/11: WinFsp, letra de unidad, Explorador, servicio, instalador | §21, §22 |
-| [embedded-integration.md](embedded-integration.md) | Integración embebida: capa `platform/embedded`, MCU de 8 bits (`platform/8bit`) y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython | §5, §6, §20, §21, MFS-ARCH-010 rev. 2 |
+| [embedded-integration.md](embedded-integration.md) | Integración embebida: arquitecturas 8/16/32/64-bit en el núcleo (puerto + `mfs_arch`), capa `platform/embedded`, drivers MCU y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython | §3.1, §5, §6, §20, §21, MFS-ARCH-010 rev. 3 |
 | [known-limitations.md](known-limitations.md) | Desviaciones y alcance no cubierto | — |
 
 ## Estado
@@ -46,13 +46,14 @@ Integración con el sistema operativo (§21, §22):
 | Linux: front-end FUSE 3, helper de `fstab`, systemd, udev, paquetes | `platform/linux/` | [linux-integration.md](linux-integration.md) |
 | Windows 10/11: front-end WinFsp, servicio de automontaje, instalador | `platform/windows/` | [windows-integration.md](windows-integration.md) |
 | Capa embebida común (L2 sobre región de flash, `mf_t` + montaje) | `platform/embedded/` | [embedded-integration.md](embedded-integration.md) |
-| MCU de 8 bits: puerto (AVR/8051/STM8/PIC16-18/Z80), drivers L2, detección HW | `platform/8bit/` | [embedded-integration.md](embedded-integration.md) |
+| Arquitecturas 8/16/32/64-bit: puerto (AVR/8051/STM8/PIC16-18/Z80/genérico) y detección de arquitectura + aceleración HW | `src/core/mfs_port_arch.*`, `src/core/mfs_arch.c` | [embedded-integration.md](embedded-integration.md) |
+| Drivers L2 de dispositivo para MCU (NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI) | `platform/common/mfs_l2_8bit.*` | [embedded-integration.md](embedded-integration.md) |
 | Arduino (ESP32/ESP8266/RP2040), ESP-IDF, PlatformIO, MicroPython | `platform/{arduino,esp-idf,platformio,micropython}/` | [embedded-integration.md](embedded-integration.md) |
 
 Suite de verificación: `make test` (KAT §27.1, puertas §27.7, funcional, FIH
 §27.2, FTL 2, HMT, PQ, XIO, estrés, formal y **capa de integración VFS**) y
 `mfstool bench` / `mfs_tests.exe --extreme` (MFS-Bench §17). Total:
-**1 134 checks / 0 fallos**.
+**1 147 checks / 0 fallos**.
 
 Validación de los front-ends de plataforma: **montaje real en Linux** con
 `mount -t matrixfs` (FUSE 3) — **39 OK / 0 fallos** — e **interoperabilidad

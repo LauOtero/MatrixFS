@@ -48,25 +48,26 @@ TESTS    := mfs_tests.exe
 TOOL     := mfstool.exe
 MFSCTL   := mfsctl.exe
 
-# Capa de soporte para MCU de 8 bits (puerto, drivers L2, auto-detección).
-# Para un target 8-bit real, cross-compilar con -DMFS_ALLOW_8BIT_TARGET=1
-# (MFS-ARCH-010 rev.2) y el toolchain del MCU (avr-gcc, sdcc, xc8, ...).
-LIB8     := libmatrixfs_8bit.a
-P8_SRC   := $(wildcard platform/8bit/*.c)
-P8_OBJ   := $(P8_SRC:.c=.o)
+# Drivers L2 para MCU (NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI).
+# El puerto (§20.2) y el modelo de arquitectura viven en el núcleo
+# (src/core/mfs_port_arch.c, src/core/mfs_arch.c); esta librería sólo aporta
+# los drivers de dispositivo. Para un target de 8 bits, cross-compilar con
+# -DMFS_ALLOW_8BIT_TARGET=1 (MFS-ARCH-010 rev.3) y el toolchain del MCU.
+LIBMCU   := libmatrixfs_mcu.a
+MCU_SRC  := platform/common/mfs_l2_8bit.c
+MCU_OBJ  := $(MCU_SRC:.c=.o)
 
-.PHONY: all lib test bench mfstool mfsctl 8bit check-map plan strict clean
+.PHONY: all lib test bench mfstool mfsctl mcu check-map plan strict clean
 
 all: lib $(TESTS) $(TOOL) $(MFSCTL)
 
 lib: $(LIB)
 
-# Capa 8-bit (compilable en host y en toolchains de MCU; el puerto genérico
-# se usa cuando no hay macros de arquitectura específicas).
-$(LIB8): $(P8_OBJ)
+# Drivers L2 para MCU (librería aparte; el núcleo ya aporta el puerto).
+$(LIBMCU): $(MCU_OBJ)
 	ar rcs $@ $^
 
-8bit: $(LIB8)
+mcu: $(LIBMCU)
 
 $(LIB): $(CORE_OBJ)
 	ar rcs $@ $^
@@ -105,9 +106,9 @@ strict:
 
 clean:
 ifeq ($(OS),Windows_NT)
-	-$(RM) $(subst /,\,$(CORE_OBJ) $(SIM_OBJ) $(P8_OBJ) $(LIB) $(LIB8) $(TESTS) $(TOOL) $(MFSCTL)) 2>NUL
+	-$(RM) $(subst /,\,$(CORE_OBJ) $(SIM_OBJ) $(MCU_OBJ) $(LIB) $(LIBMCU) $(TESTS) $(TOOL) $(MFSCTL)) 2>NUL
 	-$(RM) matrixfs_resources.h rsc_certificate.txt 2>NUL
 else
-	-rm -f $(CORE_OBJ) $(SIM_OBJ) $(P8_OBJ) $(LIB) $(LIB8) $(TESTS) $(TOOL) $(MFSCTL)
+	-rm -f $(CORE_OBJ) $(SIM_OBJ) $(MCU_OBJ) $(LIB) $(LIBMCU) $(TESTS) $(TOOL) $(MFSCTL)
 	-rm -f matrixfs_resources.h rsc_certificate.txt
 endif

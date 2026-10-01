@@ -40,4 +40,4 @@ CFLAGS_USERMOD += -I$(USERMOD_DIR) \
 # Las primitivas de puerto obligatorias de MatrixFS (mfs_port_crit_enter,
 # mfs_port_crit_exit, mfs_port_cycles, mfs_port_time_us, mfs_port_wfi) las
 # aporta modmatrixfs.c. NO compiles sim/mfs_port_host.c ni
-# platform/8bit/mfs_port_8bit.c en el mismo binario: colisionarían.
+# src/core/mfs_port_arch.c en el mismo binario: colisionarían.

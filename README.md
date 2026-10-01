@@ -11,6 +11,8 @@
 [![No Heap](https://img.shields.io/badge/heap-ZERO-brightgreen)](#-garantías-normativas)
 [![MISRA](https://img.shields.io/badge/MISRA%20C%3A2012-oriented-orange)]()
 [![Status](https://img.shields.io/badge/status-Fase%201--2%20(en%20desarrollo)-yellow)](#-roadmap-y-estado)
+[![Arch](https://img.shields.io/badge/arch-8%2F16%2F32%2F64--bit-orange)]()
+[![Tests](https://img.shields.io/badge/tests-1147%20passing-brightgreen)]()
 
 </div>
 
@@ -30,7 +32,7 @@
 
 Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** — sin heap dinámico certificado en build-time, viabilidad honesta (`MFS_ENOTVIABLE`/`MFS_EARCH` en lugar de degradación silenciosa), y recuperación verificada ante cortes de energía.
 
-> ✅ **Soporte de 8, 16 y 32 bits** — regla normativa **MFS-ARCH-010 rev. 2**. Los MCU de 8 bits (AVR, 8051, STM8, PIC16/18, Z80) se detectan y adaptan automáticamente: se seleccionan los modos **8-bit** (≤ 2 KB de RAM) y el motor de integridad ligero (CRC-32C con tabla de *nibble*, sin AEAD). Los MCU de 16/32 bits usan los modos clásicos (Ultra-Nano … Extended). Sólo se rechaza (`MFS_EARCH`) una clase de arquitectura desconocida (`arch_class > 2`).
+> ✅ **Soporte de 8, 16, 32 y 64 bits** — regla normativa **MFS-ARCH-010 rev. 3**, con **autodetección y autoconfiguración**. El núcleo clasifica el objetivo (declarado o `MFS_ARCH_AUTO`), **detecta las capacidades de aceleración por hardware** (CRC-32C por instrucción, AES/SHA/CLMUL/SIMD/RNG/CAS) y adapta la clase, el presupuesto de RAM y la suite. Los MCU de 8 bits (AVR, 8051, STM8, PIC16/18, Z80) usan los modos **8-bit** (≤ 2 KB de RAM, sin AEAD, CRC-32C con tabla de *nibble*); los objetivos de 16/32/64 bits usan la familia clásica (Ultra-Nano … Extended). Sólo se rechaza (`MFS_EARCH`) una clase de arquitectura desconocida (`arch_class > 3`).
 
 ---
 
@@ -70,6 +72,64 @@ Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** —
 
 ---
 
+## 🧠 Subsistemas avanzados (detalle)
+
+Además de los 12 pilares, MatrixFS Ultra implementa capacidades avanzadas que
+respaldan sus garantías industriales. Se documentan aquí para que el lector
+pueda auditar la superficie real del sistema.
+
+### 🔄 Transaccionalidad (WAL+ v3)
+- **Tokens A/B** con **Contador Termométrico (TFC)**.
+- **Checkpoint** con raíz **BLAKE3** para recuperación rápida.
+- **Replay determinista** acotado por **cota BMT** (Bit Map Table).
+- **Snapshots y clones O(1)** vía `mf_snap_create()`.
+- **FormalCore**: verificación formal del replay y de invariantes del WAL+.
+
+### 💾 FTL Ultra 2
+- **ZLF** (Zoned Log-Structured File) log-structured.
+- **L2P** (Logical-to-Physical) mapping.
+- **AGCB+** (Adaptive Garbage Collection Bandit) sobre deuda GLD.
+- **WOM-p** para FRAM/MRAM (Write-Once Memory, Feistel 16 b).
+- **SLEC**, **EBA**, **WEP**, **ZRP RS(16,15)** (Reed-Solomon).
+- **RAS + Thermal Governor** para gestión térmica.
+- **ELM/PEP** (Endurance Lifetime Model / Predictor).
+- **Bad-block table** para SD/eMMC.
+
+### ⚡ Gestión energética (EDP)
+- Modelo de drenaje de **5 niveles**.
+- **ELD** (Energy Leakage Debt) presupuestado.
+- **DAB bandit determinista EXP3** para reparto de energía.
+
+### ⏱️ E/S determinista (DAIO v2)
+- Clases **RT-A / RT-B / RT-C** con *deadlines*.
+- **TCB-DA** (Time-Constrained Bandit for Deadline Allocation).
+- Latencia garantizada **p99.9 ≤ 3 ms en RT-A**.
+- **WCET** verificado por *stack-painting* y autómatas *model-checked*.
+
+### 🔐 Seguridad cripto-agile
+- Suites **S0–S3**: AES-256-CTR+HMAC-SHA256 · AES-256-GCM · Ascon-128a · ChaCha20-Poly1305.
+- **HKDF-SHA256** para derivación de claves.
+- **Nonce normativo** (época × seq monotónico) y ceroización de claves/plaintext.
+- **Negociación de suite** en montaje y **deprecación programada** con migración *rewrap*.
+- **Ancla post-cuántica LMS** (NIST SP 800-208).
+- **PUF** con *fuzzy extractor* para anclaje de claves.
+
+### 🗜️ Compresión y deduplicación (CCD v2)
+- **Deduplicación con filtro Cuckoo (CFX)**.
+- **CDC** (Content-Defined Chunking) con **Gear hash**.
+- **LZ4** y **FSST-lite** a nivel de página.
+
+### 🧬 Medios heterogéneos (HMT)
+- **Tiering heterogéneo T0/T1** (ej. FRAM + NAND).
+- Árbol de directorios único sobre ambos medios.
+- Soporte para **NAND ZNS-like** opcional.
+
+### 📡 E/S extendida (XIO)
+- **XDAM** (Extended Direct Access Mapping).
+- **SDP** (Sensor→DMA/CRC→pool→O_RAW).
+
+---
+
 ## 🏗️ Arquitectura del repositorio
 
 ```
@@ -83,6 +143,8 @@ matrixfs-ultra/
 ├── src/                                   # ⚙️ Núcleo (sin heap, MISRA-oriented)
 │   ├── mfs_internal.h                     #    Layout on-flash §22, FSMs §24, pools
 │   ├── core/
+│   │   ├── mfs_arch.c                     #    §3.1 MFS-ARCH-010 rev.3: clases 8/16/32/64-bit + aceleración HW
+│   │   ├── mfs_port_arch.c                #    §20.2 puerto del núcleo (AVR/8051/STM8/PIC/Z80/genérico/host)
 │   │   ├── mfs_hal.c                      #    §5.1 cascada · §6 viabilidad · §10.6 suites
 │   │   ├── mfs_util.c                     #    CRC-32C · HWV serialize/validate · TFC §8.4
 │   │   ├── mfs_zone.c                     #    §8.2 E2G · §11 ZLF/L2P · §9.4 GLD/AGCB+ · §13.3 ELD
@@ -107,8 +169,7 @@ matrixfs-ultra/
 │   │   ├── mfs_blk.{h,c}                  #      Driver L2: imagen · /dev/sdX · MTD · \\.\X: (RMW alineado)
 │   │   ├── mfs_vfs.{h,c}                  #      Adaptador VFS: montaje, formato, E/S, permisos POSIX
 │   │   └── mfs_vfsctl.c                   #      CLI de validación (format/probe/ls/cat/verify)
-│   ├── embedded/                          #    Capa embebida común (MCU 32-bit): L2 sobre región de flash
-│   ├── 8bit/                              #    Puerto + drivers L2 + detección para MCU de 8 bits
+│   ├── embedded/                          #    Capa embebida común (MCU): L2 sobre región de flash
 │   ├── arduino/                           #    Librería Arduino (ESP32, ESP8266, RP2040) + ejemplos
 │   ├── esp-idf/                           #    Componente externo de ESP-IDF (esp_partition, Kconfig)
 │   ├── platformio/                        #    Proyecto PlatformIO de ejemplo
@@ -120,7 +181,6 @@ matrixfs-ultra/
 │   └── vfram.h                            #    Tier T0 byte-addressable (FRAM/MRAM), sin erase
 ├── tests/                                 # ✅ Plan de verificación §27 (KATs, FIH, estrés, extremos, formal, VFS)
 ├── tools/                                 # 🔧 mfstool: manifiestos, trazas HCT, bench, analizador
-├── DOCS/                                  # 📚 Documentación de diseño e implementación
 ├── Makefile · CMakeLists.txt              # 🛠️ Build de host (lib, suite, mfstool) + targets ARM Cortex-M / MSP430
 ├── LICENSE                                # ⚖️ Apache 2.0
 ├── CONTRIBUTING.md                        # 🤝 Proceso de contribución y notificación de mejoras
@@ -196,14 +256,15 @@ mf_deinit(&fs);
 ### Cross-compilación a target
 
 El núcleo no tiene dependencias de plataforma: se compila con el toolchain del
-MCU aportando el *puerto* (§20.2) y el driver L2. Para targets de 8 bits, define
-`MFS_ALLOW_8BIT_TARGET=1`, lo que habilita los modos 8-bit y reduce los pools al
-mínimo (ver más abajo).
+MCU. El **puerto** (§20.2) y el **modelo de arquitectura** ya viven en el núcleo
+(`src/core/mfs_port_arch.c`, `src/core/mfs_arch.c`); sólo hay que aportar el
+driver L2 del medio. Para objetivos de 8 bits, define `MFS_ALLOW_8BIT_TARGET=1`,
+que habilita los modos 8-bit y reduce pools y *scratch* al mínimo.
 
 ```bash
-# Capa de soporte 8-bit (puerto + drivers L2 + auto-detección) como librería
-make 8bit                          # libmatrixfs_8bit.a
-cmake -DMATRIXFS_BUILD_8BIT=ON ..  # equivalente en CMake
+# Drivers L2 para MCU (NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI)
+make mcu                          # libmatrixfs_mcu.a
+cmake -DMATRIXFS_BUILD_MCU=ON ..  # equivalente en CMake
 
 # Cross-compilación del núcleo a un MCU de 8 bits (ejemplo AVR)
 avr-gcc -std=c11 -Os -DMFS_ALLOW_8BIT_TARGET=1 ... # (usa tu toolchain real)
@@ -226,10 +287,13 @@ sobre una región de flash plana) y aportan las primitivas de puerto obligatoria
 (`mfs_port_*`) y un driver L2 sobre la flash del dispositivo. Guía completa:
 [DOCS/embedded-integration.md](DOCS/embedded-integration.md).
 
-Para MCU de **8 bits** (AVR, 8051, STM8, PIC16/18, Z80) la capa específica está
-en [`platform/8bit/`](platform/8bit/): puerto por arquitectura, drivers SPI
-NOR/FRAM/EEPROM/flash-interna/SD-SPI y **autodetección de capacidades** con
-autoadaptación de la configuración.
+El **soporte de 8 bits está integrado en el núcleo**, igual que 16/32/64: el
+puerto por arquitectura (AVR, 8051, STM8, PIC16/18, Z80) vive en
+[`src/core/mfs_port_arch.c`](src/core/mfs_port_arch.c) y la detección y
+autoconfiguración de arquitectura/aceleradores en
+[`src/core/mfs_arch.c`](src/core/mfs_arch.c). Los drivers de dispositivo
+(NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI) están en
+[`platform/common/mfs_l2_8bit.c`](platform/common/mfs_l2_8bit.c).
 
 > ⚠️ Las integraciones se han revisado por inspección estática y estructuran el
 > build correctamente, pero **no se han compilado con los SDK de terceros**
@@ -272,10 +336,10 @@ Estas reglas son **auditables en build y runtime**, no aspiracionales:
 | ID | Regla | Mecanismo |
 |---|---|---|
 | **MFS-RES-001** | Cero heap dinámico | Pools estáticos; revisión de mapa de símbolos (`check-map`) |
-| **MFS-ARCH-010 rev. 2** | Clases 8/16/32-bit | Modos 8-bit automáticos; rechazo `MFS_EARCH` sólo si `arch_class > 2` |
-| **MFS-VIA-001/002** | Viabilidad honesta | Desglose fw+stack+perif+margen≥10 % → `MFS_ENOTVIABLE` |
+| **MFS-ARCH-010 rev. 3** | Clases 8/16/32/64-bit | Autodetección de clase y de aceleradores HW; rechazo `MFS_EARCH` sólo si `arch_class > 3` |
+| **MFS-VIA-001/002** | Viabilidad honesta | Desglose fw+stack+perif+margen ≥10 % → `MFS_ENOTVIABLE` |
 | **MFS-BUS-001..004** | No interferencia | Medición de bus SOLO lectura; cero RAM persistente compartida |
-| **MFS-SEC-001** | Nonce normativo | época ‖ seq monotónico; nunca reutilización |
+| **MFS-SEC-001** | Nonce normativo | época × seq monotónico; nunca reutilización |
 | **MFS-SEC-002** | Ceroización | Claves/nonce/plaintext limpiados tras uso |
 | **MFS-SEC-005** | EtM en S0 | Encrypt-then-MAC (AES-256-CTR + HMAC-SHA256) |
 | **MFS-HW-001** | Fallback SW | Negociación de aceleradores sin bajar garantías |
@@ -288,7 +352,7 @@ Estas reglas son **auditables en build y runtime**, no aspiracionales:
 
 ## 🧪 Verificación (§27)
 
-- **Suite completa:** **1 134 comprobaciones, 0 fallos** (`mfs_tests.exe`), ejecutada **en Linux y en Windows**, incluyendo KAT, puerta de viabilidad, FIH, extremos funcionales, estrés, determinismo formal y la **capa de integración VFS** (permisos POSIX, metadatos, E/S y persistencia sobre un medio real, la misma ruta que usan FUSE y WinFsp).
+- **Suite completa:** **1 147 comprobaciones, 0 fallos** (`mfs_tests.exe`), ejecutada **en Linux y en Windows**, incluyendo KAT, puerta de viabilidad, FIH, extremos funcionales, estrés, determinismo formal y la **capa de integración VFS** (permisos POSIX, metadatos, E/S y persistencia sobre un medio real, la misma ruta que usan FUSE y WinFsp).
 - **Montaje real en Linux:** `mount -t matrixfs` sobre FUSE 3 (libfuse3 3.17.2) con **39 comprobaciones / 0 fallos**: fichero aleatorio de 24 MiB íntegro (`cmp` y md5), `cp`, `truncate` con prefijo intacto, `rename`, borrado, `chmod`/`chown` persistentes, remontaje con md5 idéntico y montaje de sólo lectura (`EROFS`).
 - **Interoperabilidad Linux ↔ Windows:** el mismo *layout* on-flash se lee en ambos sentidos (volumen creado en Windows leído en Linux y viceversa), con `verify=MFS_OK` y contenido idéntico.
 - **Compilación nativa verificada:** todo el proyecto con `-std=c11 -Wall -Wextra -Werror` en Linux (gcc 14.2) y Windows; `matrixfs_fuse` enlazado contra **libfuse3 3.17.2** real; los tres binarios de Windows compilados con **MSVC 14.51 `/W4` sin avisos** contra el SDK de WinFsp real. Detalles y pasos pendientes (privilegios) en [DOCS/testing.md](DOCS/testing.md).
@@ -366,6 +430,75 @@ Medición sobre el puerto host con `vFlash` NOR (1 MiB, sector 4 KiB), compilaci
 
 ---
 
+## 🛠️ Herramientas
+
+### `mfstool`
+CLI para:
+- Generar **manifiestos** de build y despliegue.
+- Analizar **trazas HCT** (Health Check Trace).
+- Ejecutar el banco de pruebas **MFS-Bench v2**.
+- Analizador de conformidad contra MFS-SPEC-003.
+
+### `vFlash` / `vFRAM`
+Simuladores de memoria para desarrollo en host:
+- Inyección de fallos y **cortes de energía** (crash/recover).
+- Modelado de latencias y geometrías (NOR/NAND).
+- Tier **T0 byte-addressable** (FRAM/MRAM) sin erase.
+
+### `FormalCore`
+- Verificación formal del **replay determinista** (DAB/CUSUM/EDP).
+- Comprobación de **invariantes del WAL+** (64 combinaciones de reanudación).
+
+---
+
+## 🖥️ Plataformas y ecosistemas soportados
+
+### Sistemas operativos de escritorio
+| SO | Integración | Estado |
+|---|---|---|
+| **Linux 5.4+/6.x/7.x** | FUSE 3, `fstab`, systemd, udev, deb/rpm | ✅ Verificado (39/0) |
+| **Windows 10/11** | WinFsp, letra de unidad, servicio, Inno Setup | ✅ Compilado · ⏳ montaje real pendiente |
+
+### Frameworks embebidos
+| Framework | Carpeta | Estado |
+|---|---|---|
+| **Arduino** (ESP32, ESP8266, RP2040) | `platform/arduino/` | 🟡 Implementado · ⏳ sin compilar con SDK |
+| **ESP-IDF** (Espressif) | `platform/esp-idf/` | 🟡 Implementado · ⏳ sin compilar con SDK |
+| **PlatformIO** | `platform/platformio/` | 🟡 Implementado · ⏳ sin compilar con SDK |
+| **MicroPython** | `platform/micropython/` | 🟡 Implementado · ⏳ sin compilar con SDK |
+
+### Arquitecturas de MCU (integradas en el núcleo)
+| Clase | Puerto | Modos | Notas |
+|---|---|---|---|
+| **8 bits** (AVR, 8051, STM8, PIC16/18, Z80) | `src/core/mfs_port_arch.c` | 8-bit Ultra / Nano / Compact | ≤ 2 KB de RAM, CRC-32C con tabla de *nibble*, sin AEAD |
+| **16 / 32 bits** (ARM Cortex-M, MSP430, AVR32…) | `src/core/mfs_port_arch.c` (genérico) o el del integrador | Ultra-Nano … Extended | Familia clásica; suites S0–S3 |
+| **64 bits** (x86-64, ARM64, RISC-V 64) | `src/core/mfs_port_arch.c` (genérico) o el del integrador | Extended como techo | Suite clásica; **aceleración HW autodetectada** |
+
+La **detección y autoconfiguración** (`src/core/mfs_arch.c`) clasifica la
+arquitectura (`MFS_ARCH_AUTO` o declarada) y detecta aceleradores
+(CRC-32C por instrucción, AES, SHA-256, CLMUL, SIMD, RNG, CAS atómicos). El
+**CRC-32C se acelera automáticamente** cuando la CPU expone la instrucción
+(x86 SSE4.2 / ARMv8 CRC32, mismo polinomio de Castagnoli ⇒ resultado idéntico);
+el resto de capacidades se reportan para diagnóstico y planificación, y su ruta
+efectiva sigue siendo software (MFS-HW-001: nunca se declara una capacidad que
+no se pueda ejecutar).
+
+### MCU de 8 bits
+- **AVR, 8051, STM8, PIC16/18, Z80** vía el puerto del núcleo `src/core/mfs_port_arch.c`.
+- Modos **8-bit Ultra / Nano / Compact**.
+- Drivers SPI/I²C para NOR/FRAM/EEPROM/flash-interna/SD-SPI (`platform/common/mfs_l2_8bit.c`).
+- Autodetección de capacidades y autoadaptación de la configuración.
+
+### RTOS
+- Contrato de port `mfs_port_*` para cualquier RTOS con C11.
+- Integración verificada en host; ports específicos en desarrollo.
+- **Pendientes** (equiparables a los de LittleFS): Zephyr, FreeRTOS, Mbed OS, Apache NuttX, RIOT OS, Apache Mynewt, RT-Thread, Azure RTOS ThreadX, PX5 RTOS.
+
+### SDKs de fabricantes
+- **Pendientes**: Silicon Labs (Simplicity Studio), Texas Instruments (MCU+ SDK), Infineon (ModusToolbox), Renesas (FSP).
+
+---
+
 ## 🗺️ Roadmap y estado
 
 | Fase | Contenido | Estado |
@@ -376,9 +509,10 @@ Medición sobre el puerto host con `vFlash` NOR (1 MiB, sector 4 KiB), compilaci
 | **4 — Optimización avanzada** | Hint RT-C/PEP/SDP/FSST/ZLF-Z/CQE/diccionarios on-device | ✅ Implementado (PEP, SDP, FSST-lite, ZRP, CQE) |
 | **5 — Certificación** | Dossier SIL-2/21434, deprecación de suites, tooling de flota | 🟡 Tooling listo · dossier de certificación pendiente (no es código) |
 | **6 — Integración con el SO** | Linux (FUSE 3, kernels 5.4+/6.x/7.x, `fstab`, systemd, udev, deb/rpm) · Windows 10/11 (WinFsp, letra de unidad, Explorador, servicio de automontaje, Inno Setup) | ✅ Implementado · ✅ montaje real verificado en Linux (39/0) · ✅ interoperabilidad Linux↔Windows · ⏳ montaje real en Windows pendiente (requiere sesión elevada) |
-| **7 — MCU de 8 bits y ecosistemas embebidos** | Modos 8-bit + detección/autoadaptación de HW · capa `platform/8bit` (AVR/8051/STM8/PIC16-18/Z80) · capa común `platform/embedded` · integraciones **Arduino, ESP-IDF, PlatformIO y MicroPython** | ✅ Implementado · ✅ capa embebida y 8-bit verificadas en host · ⏳ compilación con SDK de terceros pendiente |
+| **7 — Arquitecturas y ecosistemas embebidos** | Clases **8/16/32/64-bit** con autodetección y **autoconfiguración de aceleración HW** · puerto y modelo de arquitectura en el núcleo (`src/core/mfs_arch.c`, `mfs_port_arch.c`) · drivers MCU (`platform/common/mfs_l2_8bit.c`) · capa común `platform/embedded` · integraciones **Arduino, ESP-IDF, PlatformIO y MicroPython** | ✅ Implementado · ✅ 64-bit, CRC-32C acelerado y capa embebida verificados en host · ⏳ compilación con SDK/toolchains de terceros pendiente |
+| **8 — RTOS y SDKs de fabricantes** | Ports oficiales para Zephyr, FreeRTOS, Mbed OS, NuttX, RIOT, Mynewt, RT-Thread, ThreadX, PX5 · Integración en Silicon Labs, TI, Infineon, Renesas | 🔴 No iniciado |
 
-**Estado actual:** subsistemas de Fase 3–4 implementados y verificados — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), tiering HMT T0/T1, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE y FormalCore. La capa de integración con el sistema operativo (carpetas `platform/linux` y `platform/windows`, con la capa portable compartida `platform/common`) está implementada y **verificada con montaje real en Linux** (39 OK / 0 fallos) e **interoperabilidad bidireccional Linux ↔ Windows**. Sobre ella se añade el **soporte de MCU de 8 bits** (`platform/8bit`, modos 8-bit y detección/autoadaptación de hardware) y las **integraciones para Arduino, ESP-IDF, PlatformIO y MicroPython** sobre la capa común `platform/embedded`. Suite completa **1 134 checks / 0 fallos** con `-std=c11 -Wall -Wextra -Werror` sin avisos en Linux y Windows. Los límites y desviaciones vigentes están inventariados en [DOCS/known-limitations.md](DOCS/known-limitations.md). Ver [CHANGELOG.md](CHANGELOG.md).
+**Estado actual:** subsistemas de Fase 3–4 implementados y verificados — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), tiering HMT T0/T1, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE y FormalCore. La capa de integración con el sistema operativo (carpetas `platform/linux` y `platform/windows`, con la capa portable compartida `platform/common`) está implementada y **verificada con montaje real en Linux** (39 OK / 0 fallos) e **interoperabilidad bidireccional Linux ↔ Windows**. Sobre ella se añade el **soporte de arquitecturas 8/16/32/64 bits integrado en el núcleo** (`src/core/mfs_arch.c` + `mfs_port_arch.c`, con detección y autoconfiguración de aceleración por hardware), los **drivers L2 para MCU** y las **integraciones para Arduino, ESP-IDF, PlatformIO y MicroPython** sobre la capa común `platform/embedded`. Suite completa **1 147 checks / 0 fallos** con `-std=c11 -Wall -Wextra -Werror` sin avisos en Linux y Windows. Los límites y desviaciones vigentes están inventariados en [DOCS/known-limitations.md](DOCS/known-limitations.md). Ver [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -388,7 +522,9 @@ Medición sobre el puerto host con `vFlash` NOR (1 MiB, sector 4 KiB), compilaci
 - **[DOCS/](DOCS/)** — 📘 Guías de diseño e implementación por módulo (arquitectura, HAL/viabilidad, E2G, WAL/transacciones, suites criptográficas, RT/energía, layout flash, contrato de puertos, conformidad/tests).
 - **[DOCS/linux-integration.md](DOCS/linux-integration.md)** — 🐧 Integración con Linux: matriz de kernels, requisitos de compilación, instalación, `fstab`, systemd/udev, paquetes deb/rpm, resolución de problemas y validación.
 - **[DOCS/windows-integration.md](DOCS/windows-integration.md)** — 🪟 Integración con Windows 10/11: WinFsp, compilación con MSVC, letra de unidad, tabla de operaciones del Explorador, servicio de automontaje, instalador y validación.
-- **[DOCS/embedded-integration.md](DOCS/embedded-integration.md)** — 🔌 Integración embebida: capa común `platform/embedded`, MCU de 8 bits (`platform/8bit`) y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython.
+- **[DOCS/embedded-integration.md](DOCS/embedded-integration.md)** — 🔌 Integración embebida: puerto y arquitectura en el núcleo (8/16/32/64-bit), capa común `platform/embedded`, drivers MCU y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython.
+- **[DOCS/known-limitations.md](DOCS/known-limitations.md)** — ⚠️ Límites y desviaciones vigentes respecto a la spec.
+- **[DOCS/testing.md](DOCS/testing.md)** — 🧪 Pasos de verificación y privilegios requeridos.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — 🤝 Cómo proponer mejoras, reportar desviaciones respecto a la spec y enviar KATs.
 - **[tools/](tools/)** — 🔧 `mfstool`: generador de manifiestos, analizador de trazas HCT, banco MFS-Bench v2, emparejador formal.
 
@@ -400,7 +536,7 @@ El desarrollo de **MatrixFS Ultra** sigue un proceso abierto y trazable. Cualqui
 
 | Tipo | Canal | Plantilla / campos obligatorios |
 |---|---|---|
-| 🐞 **Bug / corrupción** | [GitHub Issues → Bug report](../../issues/new?labels=bug) | Reproducción con vFlash, secuencia de operaciones, punto de corte, logs HCT exportados |
+| 🐛 **Bug / corrupción** | [GitHub Issues → Bug report](../../issues/new?labels=bug) | Reproducción con vFlash, secuencia de operaciones, punto de corte, logs HCT exportados |
 | 💡 **Mejora / feature** | [GitHub Issues → Enhancement](../../issues/new?labels=enhancement) | Sección(s) de MFS-SPEC-003 afectadas, impacto en RSC/pila/WCET, KPI MFS-Bench esperado |
 | 📏 **Desviación vs. spec** | Issue con etiqueta `spec-deviation` | ID de regla (p. ej. `MFS-VIA-002`), comportamiento observado vs. normativo |
 | 🔐 **Vulnerabilidad de seguridad** | **NO abrir issue público** — escribir a `security@matrixfs.example` | CVSS preliminar, suite/media afectados, PoC confidencial |
@@ -431,6 +567,7 @@ Los documentos de especificación en `DOCS/` comparten la misma licencia. Las ma
 
 **MatrixFS Ultra «ATLAS»** — *donde cada promesa es un artefacto auditable.*
 
-[⬆ Volver arriba](#--matrixfs-ultra-atlas)
+[⬆ Volver arriba](#-matrixfs-ultra-atlas)
 
 </div>
+```
