@@ -1,0 +1,33 @@
+# 99-matrixfs.rules — detección y automontaje de volúmenes MatrixFS Ultra.
+#
+# Al conectar (o arrancar con) un dispositivo de bloque que contenga un volumen
+# MatrixFS Ultra válido, se solicita a systemd que arranque la unidad
+# matrixfs@<devnode>.service, que a su vez monta el volumen en
+# /run/media/matrixfs/<devnode>.
+#
+# El sondeo (matrixfs-probe) lee únicamente los dos superblocks (512 B) y
+# valida su CRC: es una operación de sólo lectura y de coste despreciable.
+#
+# Requisitos: systemd y el paquete instalado con `make install`.
+
+# 1) Sondear el medio. Se aplica tanto a particiones como a discos completos
+#    (un volumen MatrixFS puede ocupar el medio entero, sin tabla de particiones):
+#      · se excluye lo gestionado por device-mapper / md / loop de sistema,
+#      · se excluye lo que ya tiene un sistema de ficheros reconocido (blkid),
+#      · se excluye un disco con tabla de particiones (sus particiones se
+#        sondearán individualmente),
+#      · se excluyen soportes ópticos y disqueteras.
+ACTION=="add", SUBSYSTEM=="block", ENV{DM_NAME}=="", ENV{MD_NAME}=="", \
+    ENV{ID_FS_TYPE}=="", ENV{ID_PART_TABLE_TYPE}=="", \
+    ENV{ID_CDROM}!="1", ENV{ID_DRIVE_FLOPPY}!="1", \
+    IMPORT{program}="@LIBDIR@/matrixfs/matrixfs-probe $devnode"
+
+# 2) Identificar el volumen para los entornos de escritorio (udisks/GNOME/KDE)
+#    y solicitar la unidad de montaje a systemd.
+ACTION=="add", SUBSYSTEM=="block", ENV{MATRIXFS_VOLUME}=="1", \
+    ENV{ID_FS_TYPE}="matrixfs", ENV{ID_FS_LABEL}="$env{MATRIXFS_LABEL}", \
+    ENV{ID_FS_USAGE}="filesystem", TAG+="systemd", \
+    ENV{SYSTEMD_WANTS}+="matrixfs@%k.service"
+
+# 3) Al extraer el medio, systemd detiene la unidad automáticamente porque
+#    ésta declara BindsTo=dev-%i.device; no se requiere regla adicional.

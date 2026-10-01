@@ -1,0 +1,59 @@
+#!/bin/sh
+# postinst — guion de mantenimiento de Debian (se ejecuta tras instalar).
+#
+# Acciones:
+#   1. Recargar systemd y udev para que la unidad matrixfs@.service y la regla
+#      99-matrixfs.rules queden registradas sin reiniciar.
+#   2. Avisar de la configuración necesaria en /etc/fuse.conf para el
+#      automontaje multiusuario (no se modifica ningún fichero de
+#      configuración del sistema: se informa al administrador).
+#
+# Uso: postinst configure
+
+set -e
+
+case "$1" in
+configure)
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl daemon-reload >/dev/null 2>&1 || true
+    fi
+
+    if command -v udevadm >/dev/null 2>&1; then
+        udevadm control --reload-rules >/dev/null 2>&1 || true
+        udevadm trigger --subsystem-match=block >/dev/null 2>&1 || true
+    fi
+
+    # El automontaje por udev monta con allow_other; libfuse exige que ese
+    # acceso multiusuario esté habilitado explícitamente en /etc/fuse.conf.
+    if [ -f /etc/fuse.conf ]; then
+        if ! grep -q '^[[:space:]]*user_allow_other' /etc/fuse.conf; then
+            echo ""
+            echo "MatrixFS: para que los volúmenes automontados sean accesibles"
+            echo "          por usuarios distintos de root, añada a /etc/fuse.conf:"
+            echo "              user_allow_other"
+        fi
+    else
+        echo ""
+        echo "MatrixFS: no existe /etc/fuse.conf (lo aporta el paquete 'fuse3')."
+        echo "          Si necesita acceso multiusuario al volumen, créelo con la"
+        echo "          línea:  user_allow_other"
+    fi
+
+    echo ""
+    echo "MatrixFS: instalado. Pasos siguientes:"
+    echo "  1) Crear un volumen:  sudo matrixfs-mkfs -L DATOS /dev/sdb1"
+    echo "  2) Montar:            sudo mount -t matrixfs /dev/sdb1 /mnt/datos"
+    echo "  3) o conectar el medio (automontaje udev en /run/media/matrixfs/…)"
+    ;;
+
+abort-upgrade | abort-remove | abort-deconfigure)
+    # Nada que deshacer: el paquete no arranca servicios ni deja estado.
+    ;;
+
+*)
+    echo "postinst: acción no reconocida '$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,95 @@
+#!/bin/sh
+# matrixfs-mount — helper de montaje para /etc/fstab y `mount -t matrixfs`.
+#
+# Se instala como /sbin/mount.matrixfs. El kernel no interviene: mount(8)
+# invoca este helper y éste arranca el front-end FUSE 3 en primer plano (el
+# proceso queda en segundo plano sólo si no se pasa -f, que es lo que hace
+# mount(8) al esperar la señal de montaje).
+#
+# Uso directo:
+#   mount -t matrixfs /dev/sdb1 /mnt/datos
+#   mount -t matrixfs -o label=DATOS,uid=1000,gid=1000,rw vol0.img /mnt/vol0
+#
+# Entrada de /etc/fstab:
+#   /dev/sdb1  /mnt/datos  matrixfs  defaults,noauto,uid=1000,gid=1000  0 0
+#
+# Opciones reconocidas (se traducen a opciones de matrixfs_fuse):
+#   ro|rw  uid=N  gid=N  fmask=OCT  dmask=OCT  label=NOMBRE  ram=N
+#   erase_unit=N  allow_other  allow_root  nonempty  auto_unmount
+# El resto de opciones de libro mayor (defaults, noauto, user, users, nofail,
+# _netdev, x-systemd.*, comment=*) se descartan.
+
+set -eu
+
+PROG=$(basename "$0")
+
+# --- Localiza el binario FUSE ------------------------------------------------
+FUSE_BIN=${MATRIXFS_FUSE:-}
+if [ -z "$FUSE_BIN" ]; then
+    for c in /usr/local/bin/matrixfs_fuse /usr/bin/matrixfs_fuse /sbin/matrixfs_fuse; do
+        if [ -x "$c" ]; then
+            FUSE_BIN=$c
+            break
+        fi
+    done
+fi
+if [ -z "$FUSE_BIN" ] || [ ! -x "$FUSE_BIN" ]; then
+    echo "$PROG: no se encuentra matrixfs_fuse (defina MATRIXFS_FUSE)" >&2
+    exit 1
+fi
+
+# --- Argumentos --------------------------------------------------------------
+DEVICE=""
+MOUNTPOINT=""
+OPTS=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -o)
+            shift
+            [ $# -gt 0 ] || { echo "$PROG: falta el valor de -o" >&2; exit 2; }
+            OPTS="$OPTS,$1"
+            ;;
+        -o*) OPTS="$OPTS,${1#-o}" ;;
+        -t) shift ;;            # tipo de FS (siempre matrixfs)
+        -t*) ;;
+        -*) ;;                  # -n, -v, -s: irrelevantes aquí
+        *)
+            if [ -z "$DEVICE" ]; then
+                DEVICE=$1
+            elif [ -z "$MOUNTPOINT" ]; then
+                MOUNTPOINT=$1
+            fi
+            ;;
+    esac
+    shift
+done
+
+if [ -z "$DEVICE" ] || [ -z "$MOUNTPOINT" ]; then
+    echo "uso: mount -t matrixfs <dispositivo> <punto_de_montaje> [-o opciones]" >&2
+    exit 2
+fi
+
+# --- Filtrado de opciones ----------------------------------------------------
+FUSE_OPTS=""
+OLDIFS=$IFS
+IFS=,
+for o in $(printf '%s' "${OPTS#,}"); do
+    [ -n "$o" ] || continue
+    case "$o" in
+        defaults|auto|noauto|user|users|nouser|owner|group|nofail|_netdev|rw) ;;
+        x-systemd.*|comment=*) ;;
+        ro) FUSE_OPTS="$FUSE_OPTS,ro" ;;
+        *)  FUSE_OPTS="$FUSE_OPTS,$o" ;;
+    esac
+done
+IFS=$OLDIFS
+
+FUSE_OPTS=${FUSE_OPTS#,}
+
+# FUSE escucha SIGTERM/SIGINT para desmontar; mount(8) no usa -f.
+if [ -n "$FUSE_OPTS" ]; then
+    exec "$FUSE_BIN" "$DEVICE" "$MOUNTPOINT" -o "$FUSE_OPTS"
+else
+    exec "$FUSE_BIN" "$DEVICE" "$MOUNTPOINT"
+fi

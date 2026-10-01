@@ -1,0 +1,38 @@
+#!/bin/sh
+# prerm — guion de mantenimiento de Debian (se ejecuta antes de desinstalar).
+#
+# Detiene las unidades de montaje automático matrixfs@*.service activas para
+# que los volúmenes queden desmontados antes de borrar los binarios. No se
+# toca NUNCA el contenido de los volúmenes: MatrixFS almacena toda la
+# información (ficheros, metadatos y permisos) en el propio medio.
+#
+# Uso: prerm remove | upgrade | deconfigure
+
+set -e
+
+case "$1" in
+remove | deconfigure)
+    if command -v systemctl >/dev/null 2>&1; then
+        # `list-units` incluye las unidades activas e inactivas conocidas; el
+        # filtro por patrón evita depender de `systemctl list-units --all`.
+        for u in $(systemctl list-units --type=service --all --no-legend \
+            'matrixfs@*.service' 2>/dev/null | awk '{print $1}'); do
+            systemctl stop "$u" >/dev/null 2>&1 || true
+        done
+        systemctl daemon-reload >/dev/null 2>&1 || true
+    fi
+    ;;
+
+upgrade | failed-upgrade | abort-install | abort-upgrade | disappear)
+    # En una actualización no se interrumpen los montajes en curso: la unidad
+    # y la regla de udev se sustituyen en caliente y el núcleo sigue sirviendo
+    # el volumen (el proceso FUSE ya está en memoria).
+    ;;
+
+*)
+    echo "prerm: acción no reconocida '$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

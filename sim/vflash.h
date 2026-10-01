@@ -18,18 +18,21 @@
 
 #include "matrixfs/matrixfs.h"
 
-#define VF_SECTOR   4096u                  /* unidad de erase mínima NOR (§25) */
-#define VF_MAX_BLOCKS 256u                 /* hasta 1 MiB de medio simulado    */
+#define VF_SECTOR 4096u    /* unidad de erase mínima NOR (§25) */
+#define VF_MAX_BLOCKS 256u /* hasta 1 MiB de medio simulado    */
 
 typedef struct {
-    uint8_t  *img;                 /* imagen persistente del medio        */
-    uint32_t  size;                /* bytes totales                       */
-    uint32_t  erase_unit;          /* bytes por bloque                    */
-    bool      crashed;             /* true ⇒ toda op devuelve MFS_EIO     */
-    /* telemetría para asserts de test */
-    uint32_t  n_read, n_prog, n_erase, n_violations;
-    uint16_t  pe_max;              /* máximos ciclos P/E de un bloque     */
-    uint16_t  pe[VF_MAX_BLOCKS];   /* contador por bloque                 */
+  uint8_t *img;        /* imagen persistente del medio        */
+  uint32_t size;       /* bytes totales                       */
+  uint32_t erase_unit; /* bytes por bloque                    */
+  bool crashed;        /* true ⇒ toda op devuelve MFS_EIO     */
+  /* telemetría para asserts de test */
+  uint32_t n_read, n_prog, n_erase, n_violations;
+  uint32_t viol_addr;         /* dirección de la 1ª violación NOR    */
+  bool fail_next_prog;        /* inyección de fallo de un solo uso   */
+  uint16_t pe_max;            /* máximos ciclos P/E de un bloque     */
+  uint16_t pe[VF_MAX_BLOCKS]; /* contador por bloque                 */
+  mfs_l2_driver drv;          /* driver L2 asociado (ctx = este)     */
 } vflash_t;
 
 /* Inicializa con imagen de `size` bytes (erased 0xFF). `size` múltiplo de

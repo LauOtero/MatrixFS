@@ -1,0 +1,88 @@
+#!/bin/sh
+# matrixfs-probe — sondeo de volumen MatrixFS Ultra para udev.
+#
+# Se instala en <libdir>/matrixfs/matrixfs-probe y lo invoca la regla
+# 99-matrixfs.rules mediante IMPORT{program} al conectar (o arrancar con) un
+# dispositivo de bloque:
+#
+#   IMPORT{program}="@LIBDIR@/matrixfs/matrixfs-probe $devnode"
+#
+# Salida (formato clave=valor que udev importa como variables de entorno):
+#   MATRIXFS_VOLUME=1
+#   MATRIXFS_LABEL=<etiqueta>
+#   MATRIXFS_MODE=<modo>
+#
+# Si el dispositivo no contiene un volumen válido imprime
+# `MATRIXFS_VOLUME=0` y termina con éxito: un sondeo fallido NO es un error,
+# sólo indica que el medio no es nuestro.
+#
+# El sondeo es de sólo lectura y lee únicamente los dos superblocks (512 B),
+# validando su CRC-32C; su coste es despreciable y no modifica el medio.
+
+set -u
+
+PROG=$(basename "$0")
+DEV=${1:-}
+
+if [ -z "$DEV" ]; then
+    printf 'MATRIXFS_VOLUME=0\n'
+    exit 0
+fi
+
+# Sólo tiene sentido sondear dispositivos de bloque (o ficheros regulares, que
+# se aceptan para pruebas manuales fuera de udev).
+if [ ! -b "$DEV" ] && [ ! -f "$DEV" ]; then
+    printf 'MATRIXFS_VOLUME=0\n'
+    exit 0
+fi
+
+# Localiza matrixfs-ctl: variable de entorno, PATH y rutas estándar de
+# instalación (PREFIX=/usr/local y PREFIX=/usr).
+CTL=${MATRIXFS_CTL:-}
+if [ -z "$CTL" ]; then
+    if command -v matrixfs-ctl >/dev/null 2>&1; then
+        CTL=$(command -v matrixfs-ctl)
+    else
+        for c in /usr/local/bin/matrixfs-ctl /usr/bin/matrixfs-ctl /sbin/matrixfs-ctl; do
+            if [ -x "$c" ]; then
+                CTL=$c
+                break
+            fi
+        done
+    fi
+fi
+
+if [ -z "$CTL" ] || [ ! -x "$CTL" ]; then
+    echo "$PROG: no se encuentra matrixfs-ctl (defina MATRIXFS_CTL)" >&2
+    printf 'MATRIXFS_VOLUME=0\n'
+    exit 0
+fi
+
+# Un volumen MatrixFS ocupa al menos el superblock: descarta medios triviales
+# (disquetes vacíos, dispositivos de 0 B) sin llegar a abrir el medio.
+SIZE=0
+if [ -b "$DEV" ] && command -v blockdev >/dev/null 2>&1; then
+    SIZE=$(blockdev --getsize64 "$DEV" 2>/dev/null || echo 0)
+elif [ -f "$DEV" ]; then
+    SIZE=$(wc -c <"$DEV" 2>/dev/null || echo 0)
+fi
+SIZE=${SIZE:-0}
+case "$SIZE" in
+    ''|*[!0-9]*) SIZE=0 ;;
+esac
+
+if [ "$SIZE" -lt 1024 ]; then
+    printf 'MATRIXFS_VOLUME=0\n'
+    exit 0
+fi
+
+# El análisis real lo hace el núcleo (misma ruta que usa el montaje). Se
+# silencia stderr: un medio ajeno no debe ensuciar el registro de udev.
+OUT=$("$CTL" probe "$DEV" --kv 2>/dev/null) || OUT="MATRIXFS_VOLUME=0"
+
+case "$OUT" in
+    *MATRIXFS_VOLUME=1*) printf '%s\n' "$OUT" ;;
+    *) printf 'MATRIXFS_VOLUME=0\n' ;;
+esac
+
+exit 0

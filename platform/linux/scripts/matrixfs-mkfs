@@ -1,0 +1,100 @@
+#!/bin/sh
+# matrixfs-mkfs — crea y formatea un volumen MatrixFS Ultra.
+#
+# Uso:
+#   matrixfs-mkfs [-L ETIQUETA] [-s TAMANO] [-e ERASE_UNIT] <dispositivo|imagen>
+#
+# Ejemplos:
+#   matrixfs-mkfs -L DATOS /dev/sdb1             # formatea una partición
+#   matrixfs-mkfs -L VOL0 -s 64M vol0.img        # crea y formatea una imagen
+#   matrixfs-mkfs /dev/mtd0                      # formatea un dispositivo MTD
+#
+# Si el destino es una ruta de fichero que no existe, se crea del tamaño
+# indicado con -s (por defecto 64 MiB) y se formatea.
+#
+# El núcleo MatrixFS direcciona con 32 bits, por lo que el volumen efectivo
+# queda limitado a 4 GiB (ver DOCS/known-limitations.md).
+
+set -eu
+
+PROG=$(basename "$0")
+LABEL=""
+SIZE=""
+EUNIT=""
+
+# Localiza matrixfs-ctl: variable de entorno, PATH y rutas estándar de
+# instalación (PREFIX=/usr/local y PREFIX=/usr).
+CTL=${MATRIXFS_CTL:-}
+if [ -z "$CTL" ]; then
+    if command -v matrixfs-ctl >/dev/null 2>&1; then
+        CTL=$(command -v matrixfs-ctl)
+    else
+        for c in /usr/local/bin/matrixfs-ctl /usr/bin/matrixfs-ctl /sbin/matrixfs-ctl; do
+            if [ -x "$c" ]; then
+                CTL=$c
+                break
+            fi
+        done
+    fi
+fi
+
+usage() {
+    cat <<EOF
+uso: $PROG [-L ETIQUETA] [-s TAMANO] [-e ERASE_UNIT] <dispositivo|imagen>
+
+  -L ETIQUETA     etiqueta de volumen (máx. 15 caracteres)
+  -s TAMANO       tamaño de la imagen a crear (p.ej. 64M, 1G); sólo si el
+                  destino es un fichero inexistente
+  -e ERASE_UNIT   tamaño del bloque de borrado en bytes; por omisión se deriva
+                  del tamaño del medio para que la ventana de zonas lo cubra
+  -h              muestra esta ayuda
+EOF
+}
+
+while getopts "L:s:e:h" opt; do
+    case "$opt" in
+        L) LABEL=$OPTARG ;;
+        s) SIZE=$OPTARG ;;
+        e) EUNIT=$OPTARG ;;
+        h) usage; exit 0 ;;
+        *) usage; exit 2 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -ne 1 ]; then
+    usage
+    exit 2
+fi
+
+TARGET=$1
+
+if [ -z "$CTL" ] || [ ! -x "$CTL" ]; then
+    echo "$PROG: no se encuentra matrixfs-ctl (compile con 'make' e instale, o defina MATRIXFS_CTL)" >&2
+    exit 1
+fi
+
+# Imagen nueva: crear del tamaño pedido (por defecto 64 MiB).
+if [ ! -e "$TARGET" ]; then
+    case "$TARGET" in
+        /dev/*)
+            echo "$PROG: el dispositivo $TARGET no existe" >&2
+            exit 1
+            ;;
+    esac
+    SIZE=${SIZE:-64M}
+    echo "$PROG: creando imagen $TARGET ($SIZE)"
+    truncate -s "$SIZE" "$TARGET"
+fi
+
+set -- format "$TARGET"
+if [ -n "$EUNIT" ]; then
+    set -- "$@" --erase-unit "$EUNIT"
+fi
+if [ -n "$LABEL" ]; then
+    set -- "$@" --label "$LABEL"
+fi
+
+echo "$PROG: formateando $TARGET"
+# shellcheck disable=SC2068
+exec "$CTL" $@

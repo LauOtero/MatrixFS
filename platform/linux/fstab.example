@@ -1,0 +1,80 @@
+# fstab.example — entradas de ejemplo para /etc/fstab (MatrixFS Ultra).
+#
+# Se instala como /usr/share/doc/matrixfs/fstab.example y no se copia nunca
+# sobre /etc/fstab: son ejemplos para adaptar.
+#
+# Formato de la línea:
+#   <dispositivo>  <punto de montaje>  matrixfs  <opciones>  <dump>  <pass>
+#
+# El helper /sbin/mount.matrixfs (instalado por `make install`) traduce las
+# opciones de fstab a opciones del front-end FUSE; el kernel no interviene.
+# Por eso el tipo es `matrixfs` y no `fuse.matrixfs` (los sistemas de archivos
+# en espacio de usuario se invocan siempre con su propio tipo).
+#
+# Antes de montar, el medio debe estar formateado:
+#   sudo matrixfs-mkfs -L DATOS /dev/sdb1
+#
+# Opciones específicas reconocidas por el helper:
+#   ro | rw                 sólo lectura / lectura-escritura
+#   uid=N  gid=N            propietario por defecto de los nodos nuevos
+#   fmask=OCT  dmask=OCT    permisos por defecto (p. ej. 644 y 755)
+#   label=NOMBRE            etiqueta informativa (no modifica el volumen)
+#   ram=N                   presupuesto RAM declarado en bytes (por defecto
+#                           262144 → modo Extended, chunk 4096)
+#   erase_unit=N            bloque de borrado en bytes; debe coincidir con el
+#                           usado al formatear (por omisión se deriva del
+#                           tamaño del medio)
+#   allow_other             permite el acceso a otros usuarios (requiere
+#                           `user_allow_other` en /etc/fuse.conf)
+#   allow_root              permite el acceso a root además del usuario que monta
+#   nonempty                permite montar sobre un directorio no vacío
+#   auto_unmount            desmonta al terminar el proceso FUSE
+# Las opciones de libro mayor (defaults, noauto, user, users, nofail, _netdev,
+# x-systemd.*, comment=*) se descartan sin error.
+#
+# ---------------------------------------------------------------------------
+# 1. Partición dedicada, montaje por root, accesible por todos (recomendado)
+# ---------------------------------------------------------------------------
+#/dev/sdb1   /mnt/datos   matrixfs   defaults,uid=1000,gid=1000,fmask=644,dmask=755,allow_other   0 0
+
+# ---------------------------------------------------------------------------
+# 2. Montaje a demanda por cualquier usuario del grupo `fuse`
+#    (`users` permite a cualquier usuario montar/desmontar; `noauto` evita que
+#    `mount -a` lo haga en el arranque)
+# ---------------------------------------------------------------------------
+#/dev/sdb1   /mnt/datos   matrixfs   noauto,users,uid=1000,gid=1000,allow_other   0 0
+
+# ---------------------------------------------------------------------------
+# 3. Sólo lectura (por ejemplo, un volumen de distribución o respaldo)
+# ---------------------------------------------------------------------------
+#/dev/sdc1   /mnt/ro      matrixfs   ro,defaults,uid=1000,gid=1000                0 0
+
+# ---------------------------------------------------------------------------
+# 4. Imagen de fichero (volúmenes en disco, contenedores, máquinas virtuales)
+#    Se monta cuando el fichero existe; útil con `mount -a` tras el arranque.
+# ---------------------------------------------------------------------------
+#/var/lib/matrixfs/vol0.img   /mnt/vol0   matrixfs   defaults,uid=1000,gid=1000   0 0
+
+# ---------------------------------------------------------------------------
+# 5. Volumen extraíble: no bloquear el arranque si no está presente
+#    (`nofail` + `x-systemd.device-timeout` evitan las esperas de 90 s)
+# ---------------------------------------------------------------------------
+#UUID=xxxx-xxxx   /mnt/datos   matrixfs   nofail,x-systemd.device-timeout=5,uid=1000,gid=1000   0 0
+
+# ---------------------------------------------------------------------------
+# 6. Montaje con presupuesto RAM reducido (medios grandes con poca memoria)
+#    El presupuesto debe ser suficiente para la geometría declarada; si el
+#    montaje falla con MFS_ENOTVIABLE, auméntelo.
+# ---------------------------------------------------------------------------
+#/dev/mtdblock0   /mnt/nand   matrixfs   defaults,ram=32768,uid=1000,gid=1000    0 0
+
+# ---------------------------------------------------------------------------
+# Notas
+# ---------------------------------------------------------------------------
+# · `pass` (última columna) debe ser 0: fsck no conoce MatrixFS. La
+#   verificación de integridad se hace con:
+#       sudo matrixfs-ctl verify /dev/sdb1 --full
+# · Para el automontaje por udev no se necesita ninguna entrada aquí: la regla
+#   99-matrixfs.rules y la unidad matrixfs@.service lo montan en
+#   /run/media/matrixfs/<dispositivo> al conectar el medio.
+# · Tras modificar /etc/fstab:  sudo systemctl daemon-reload

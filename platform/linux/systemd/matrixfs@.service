@@ -1,0 +1,44 @@
+# matrixfs@.service — montaje automático de un volumen MatrixFS Ultra (§21).
+#
+# Unidad plantilla instanciada por udev (99-matrixfs.rules) con el nombre del
+# nodo de dispositivo en el kernel como instancia:
+#
+#   matrixfs@sdb1.service   ->  /dev/sdb1  en  /run/media/matrixfs/sdb1
+#
+# Activación manual:
+#   sudo systemctl start matrixfs@sdb1.service
+#   sudo systemctl status matrixfs@sdb1.service
+#   journalctl -u matrixfs@sdb1.service
+#
+# Los marcadores @BINDIR@ y @LIBDIR@ los sustituye el Makefile por el prefijo
+# real de instalación (/usr/local o /usr).
+
+[Unit]
+Description=MatrixFS Ultra volume (/dev/%i)
+Documentation=file:@LIBDIR@/../share/doc/matrixfs/linux-integration.md
+# La unidad vive y muere con el dispositivo: si se extrae el medio, systemd la
+# detiene (KillSignal la desmonta) y no se reintenta.
+BindsTo=dev-%i.device
+After=dev-%i.device
+Conflicts=umount.target
+Before=umount.target
+
+[Service]
+Type=simple
+# El front-end FUSE se ejecuta en primer plano (-f): systemd controla el
+# proceso directamente y su ciclo de vida coincide con el del montaje.
+ExecStartPre=/bin/mkdir -p /run/media/matrixfs
+ExecStart=@BINDIR@/matrixfs_fuse /dev/%i /run/media/matrixfs/%i -f -o allow_other
+# libfuse desmonta al recibir SIGINT: es la vía normal de parada.
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=25
+# Red de seguridad: si el proceso murió sin desmontar (por ejemplo tras un
+# fallo), se completa el desmontaje. `-` tolera que ya no quede nada montado.
+ExecStopPost=-/bin/sh -c 'mountpoint -q /run/media/matrixfs/%i && /usr/bin/fusermount3 -u /run/media/matrixfs/%i'
+# Un fallo del montaje no debe reiniciarse en bucle (el medio podría haberse
+# extraído o estar corrupto): se registra y la unidad queda detenida.
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

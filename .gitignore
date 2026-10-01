@@ -1,1 +1,44 @@
-(empty)
+# MatrixFS Ultra «ATLAS» — artefactos de build y material sensible
+
+# Compilación / enlazado
+*.o
+*.a
+*.obj
+*.exe
+*.elf
+*.bin
+*.hex
+*.map
+*.d
+
+# Directorios de build y de artefactos (raíz y por plataforma:
+# platform/linux/build, platform/windows/dist, etc.)
+build/
+dist/
+/out/
+
+# Generados por mfstool (§26)
+matrixfs_resources.h
+rsc_certificate.txt
+*.dict
+*.signed
+
+# Imágenes del simulador vFlash y trazas HCT
+*.vflash
+*.img
+*.hct
+*.cbor
+
+# Material de clave: NUNCA comiteable (MFS-SEC-002, cero secretos en reposo)
+*.pem
+*.key
+*.p8
+*.p12
+secrets/
+keys/
+
+# Entornos de desarrollo
+.vscode/
+.idea/
+*.swp
+*~
