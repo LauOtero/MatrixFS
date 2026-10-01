@@ -34,6 +34,7 @@ file(GLOB TEST_SRC ${CMAKE_SOURCE_DIR}/tests/*.c)
 set(PLAT_SRC
   ${CMAKE_SOURCE_DIR}/platform/common/mfs_plat.c
   ${CMAKE_SOURCE_DIR}/platform/common/mfs_blk.c
+  ${CMAKE_SOURCE_DIR}/platform/common/mfs_l2_managed.c
   ${CMAKE_SOURCE_DIR}/platform/common/mfs_vfs.c)
 
 # --- Núcleo (sin puerto de host: lo aporta el integrador en target) ---

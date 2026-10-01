@@ -12,7 +12,7 @@
 [![MISRA](https://img.shields.io/badge/MISRA%20C%3A2012-oriented-orange)]()
 [![Status](https://img.shields.io/badge/status-Fases%201--7%20implementadas-yellow)](#-roadmap-y-estado)
 [![Arch](https://img.shields.io/badge/arch-8%2F16%2F32%2F64--bit-orange)]()
-[![Tests](https://img.shields.io/badge/tests-1147%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-1232%20passing-brightgreen)]()
 
 </div>
 
@@ -28,7 +28,15 @@
 | **NAND raw / ONFI / Toggle** | Bus de datos 8/16 | Semántica de zonas ZNS-like opcional |
 | **FRAM / MRAM / EEPROM** | I²C/SPI | Sin borrado por bloque, E2G simplificado |
 | **SD / eMMC 5.1** | CMD/DAT, CQE | Bad-block table, DMA alineado |
+| **UFS 3.1/4.0** | UniPro / UFSHCI | JEDEC JESD220; motor MANAGED, TRIM/UNMAP |
+| **SSD NVMe / SATA** | PCIe / AHCI | Motor MANAGED; `deallocate`/`unmap` (DSM) |
 | **Dual-medio heterogéneo** | NVM + flash de bloques | Un único árbol de directorios (HMT) |
+
+> Para las unidades **gestionadas** (SD/eMMC/UFS/USB/NVMe/SATA) el mapeo físico,
+> el *wear leveling*, el *bad block management* y el ECC los resuelve el propio
+> dispositivo; MatrixFS asigna por clúster y **no duplica** su FTL. Para los
+> medios **RAW** (NOR/NAND/FRAM/MRAM/EEPROM) el FTL es del núcleo. Detalle en
+> [DOCS/storage-integration.md](DOCS/storage-integration.md).
 
 Su rasgo distintivo: **cada promesa se convierte en un artefacto auditable** — sin heap dinámico certificado en build-time, viabilidad honesta (`MFS_ENOTVIABLE`/`MFS_EARCH` en lugar de degradación silenciosa), y recuperación verificada ante cortes de energía.
 
@@ -161,6 +169,7 @@ matrixfs-ultra/
 │   ├── core/
 │   │   ├── mfs_arch.c                     #    §3.1 MFS-ARCH-010 rev.3: clases 8/16/32/64-bit + aceleración HW
 │   │   ├── mfs_port_arch.c                #    §20.2 puerto del núcleo (AVR/8051/STM8/PIC/Z80/genérico/host)
+│   │   ├── mfs_port_rtos.c                #    §20.2 puerto RTOS genérico (FreeRTOS/Zephyr/ThreadX + registro)
 │   │   ├── mfs_hal.c                      #    §5.1 cascada · §6 viabilidad · §10.6 suites
 │   │   ├── mfs_util.c                     #    CRC-32C · HWV serialize/validate · TFC §8.4
 │   │   ├── mfs_zone.c                     #    §8.2 E2G · §11 ZLF/L2P · §9.4 GLD/AGCB+ · §13.3 ELD
@@ -183,13 +192,15 @@ matrixfs-ultra/
 │   ├── common/                            #    Capa portable compartida Linux + Windows
 │   │   ├── mfs_plat.{h,c}                 #      Mutex (CRITICAL_SECTION/pthread) y tiempo
 │   │   ├── mfs_blk.{h,c}                  #      Driver L2: imagen · /dev/sdX · MTD · \\.\X: (RMW alineado)
+│   │   ├── mfs_l2_managed.{h,c}           #      Driver L2 para medios gestionados (sectores + TRIM, RMW)
 │   │   ├── mfs_vfs.{h,c}                  #      Adaptador VFS: montaje, formato, E/S, permisos POSIX
 │   │   └── mfs_vfsctl.c                   #      CLI de validación (format/probe/ls/cat/verify)
 │   ├── embedded/                          #    Capa embebida común (MCU): L2 sobre región de flash
 │   ├── arduino/                           #    Librería Arduino (ESP32, ESP8266, RP2040) + ejemplos
 │   ├── esp-idf/                           #    Componente externo de ESP-IDF (esp_partition, Kconfig)
 │   ├── platformio/                        #    Proyecto PlatformIO de ejemplo
-│   ├── micropython/                       #    Usermod de MicroPython (módulo `matrixfs`)
+│   ├── micropython/                        #    Usermod de MicroPython (módulo `matrixfs`)
+│   ├── rtos/                               #    Plantilla de portado RTOS (mfs_rtos_port_template.c)
 │   ├── linux/                             #    Linux 5.4+/6.x/7.x: FUSE 3, fstab, systemd, udev, deb/rpm
 │   └── windows/                           #    Windows 10/11: WinFsp, letra de unidad, servicio, Inno Setup
 ├── sim/                                   # 🧪 vFlash/vFRAM host (NOR/NAND + byte-addressable T0)
@@ -372,7 +383,7 @@ Estas reglas son **auditables en build y runtime**, no aspiracionales:
 
 ## 🧪 Verificación (§27)
 
-- **Suite completa:** **1 147 comprobaciones, 0 fallos** (`mfs_tests.exe`), ejecutada **en Linux y en Windows**, incluyendo KAT, puerta de viabilidad, FIH, extremos funcionales, estrés, determinismo formal y la **capa de integración VFS** (permisos POSIX, metadatos, E/S y persistencia sobre un medio real, la misma ruta que usan FUSE y WinFsp).
+- **Suite completa:** **1 232 comprobaciones, 0 fallos** (`mfs_tests.exe`), ejecutada **en Linux y en Windows**, incluyendo KAT, puerta de viabilidad, FIH, extremos funcionales, estrés, determinismo formal, la **capa de integración VFS** (permisos POSIX, metadatos, E/S y persistencia sobre un medio real, la misma ruta que usan FUSE y WinFsp), el **medio gestionado** sobre el adaptador L2 (RMW + TRIM, dispositivo simulado) y el **puerto RTOS** (detección, registro y contrato §20.2).
 - **Montaje real en Linux:** `mount -t matrixfs` sobre FUSE 3 (libfuse3 3.17.2) con **39 comprobaciones / 0 fallos**: fichero aleatorio de 24 MiB íntegro (`cmp` y md5), `cp`, `truncate` con prefijo intacto, `rename`, borrado, `chmod`/`chown` persistentes, remontaje con md5 idéntico y montaje de sólo lectura (`EROFS`).
 - **Interoperabilidad Linux ↔ Windows:** el mismo *layout* on-flash se lee en ambos sentidos (volumen creado en Windows leído en Linux y viceversa), con `verify=MFS_OK` y contenido idéntico.
 - **Compilación nativa verificada:** todo el proyecto con `-std=c11 -Wall -Wextra -Werror` en Linux (gcc 14.2) y Windows; `matrixfs_fuse` enlazado contra **libfuse3 3.17.2** real; los tres binarios de Windows compilados con **MSVC 14.51 `/W4` sin avisos** contra el SDK de WinFsp real. Detalles y pasos pendientes (privilegios) en [DOCS/testing.md](DOCS/testing.md).
@@ -510,12 +521,24 @@ no se pueda ejecutar).
 - Autodetección de capacidades y autoadaptación de la configuración.
 
 ### RTOS
-- Contrato de port `mfs_port_*` para cualquier RTOS con C11.
-- Integración verificada en host; ports específicos en desarrollo.
-- **Pendientes** (equiparables a los de LittleFS): Zephyr, FreeRTOS, Mbed OS, Apache NuttX, RIOT OS, Apache Mynewt, RT-Thread, Azure RTOS ThreadX, PX5 RTOS.
+- **Puerto RTOS genérico en el núcleo** (`src/core/mfs_port_rtos.c`,
+  `include/matrixfs/mfs_port_rtos.h`): mapea el contrato `mfs_port_*` a las
+  primitivas nativas del RTOS y se selecciona por detección en tiempo de
+  compilación.
+- **Adaptadores nativos cableados**: **FreeRTOS** (`taskENTER/EXIT_CRITICAL`),
+  **Zephyr RTOS** (`irq_lock/unlock`, `k_cycle_get_32`) y **Eclipse ThreadX**
+  (`tx_interrupt_control`, `tx_time_get`).
+- **Detección + registro** para **Mbed OS, Apache NuttX, RIOT OS, Apache Mynewt,
+  RT-Thread y PX5 RTOS**, con la plantilla `platform/rtos/mfs_rtos_port_template.c`.
+- Guía completa: [DOCS/rtos-integration.md](DOCS/rtos-integration.md).
 
 ### SDKs de fabricantes
-- **Pendientes**: Silicon Labs (Simplicity Studio), Texas Instruments (MCU+ SDK), Infineon (ModusToolbox), Renesas (FSP).
+- Integración a través de los puntos de enganche: driver de flash del SDK →
+  capa `mfs_embedded` / `mfs_l2_managed`, y RTOS del SDK → puerto RTOS.
+- **Silicon Labs** (Gecko SDK), **Texas Instruments** (SimpleLink/MSPM0),
+  **Infineon** (ModusToolbox), **Renesas** (FSP): guía y puntos de enganche en
+  [DOCS/rtos-integration.md](DOCS/rtos-integration.md) §4 (depende del SoC
+  concreto).
 
 ---
 
@@ -530,9 +553,10 @@ no se pueda ejecutar).
 | **5 — Certificación** | Dossier SIL-2/21434, deprecación de suites, tooling de flota | 🟡 Tooling listo · dossier de certificación pendiente (no es código) |
 | **6 — Integración con el SO** | Linux (FUSE 3, kernels 5.4+/6.x/7.x, `fstab`, systemd, udev, deb/rpm) · Windows 10/11 (WinFsp, letra de unidad, Explorador, servicio de automontaje, Inno Setup) | ✅ Implementado · ✅ montaje real verificado en Linux (39/0) · ✅ interoperabilidad Linux↔Windows · ⏳ montaje real en Windows pendiente (requiere sesión elevada) |
 | **7 — Arquitecturas y ecosistemas embebidos** | Clases **8/16/32/64-bit** con autodetección y **autoconfiguración de aceleración HW** · puerto y modelo de arquitectura en el núcleo (`src/core/mfs_arch.c`, `mfs_port_arch.c`) · drivers MCU (`platform/common/mfs_l2_8bit.c`) · capa común `platform/embedded` · integraciones **Arduino, ESP-IDF, PlatformIO y MicroPython** | ✅ Implementado · ✅ 64-bit, CRC-32C acelerado y capa embebida verificados en host · ⏳ compilación con SDK/toolchains de terceros pendiente |
-| **8 — RTOS y SDKs de fabricantes** | Ports oficiales para Zephyr, FreeRTOS, Mbed OS, NuttX, RIOT, Mynewt, RT-Thread, ThreadX, PX5 · Integración en Silicon Labs, TI, Infineon, Renesas | 🔴 No iniciado |
+| **8 — RTOS y SDKs de fabricantes** | Puerto **RTOS genérico** en el núcleo con adaptadores nativos de **FreeRTOS, Zephyr y ThreadX**; detección + registro para Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y PX5; puntos de enganche para Silicon Labs, TI, Infineon y Renesas | 🟡 Implementado · ✅ detección/registro/contrato verificados en host · ⏳ adaptadores nativos de RTOS sin compilar aquí (sin toolchain del RTOS) |
+| **9 — Almacenamiento flash completo** | Medios **SATA** y **UFS** en el modelo + perfiles; **adaptador L2 MANAGED** genérico (sectores + TRIM + RMW); simulador de dispositivo gestionado y test en host | 🟡 Implementado · ✅ verificado en host (simulador) · ⏳ drivers de silicio (SD/eMMC/UFS/NVMe/SATA) dependen del SDK del SoC |
 
-**Estado actual:** subsistemas de Fase 3–4 implementados y verificados — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), tiering HMT T0/T1, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE y FormalCore. La capa de integración con el sistema operativo (carpetas `platform/linux` y `platform/windows`, con la capa portable compartida `platform/common`) está implementada y **verificada con montaje real en Linux** (39 OK / 0 fallos) e **interoperabilidad bidireccional Linux ↔ Windows**. Sobre ella se añade el **soporte de arquitecturas 8/16/32/64 bits integrado en el núcleo** (`src/core/mfs_arch.c` + `mfs_port_arch.c`, con detección y autoconfiguración de aceleración por hardware), los **drivers L2 para MCU** y las **integraciones para Arduino, ESP-IDF, PlatformIO y MicroPython** sobre la capa común `platform/embedded`. Suite completa **1 147 checks / 0 fallos** con `-std=c11 -Wall -Wextra -Werror` sin avisos en Linux y Windows. Los límites y desviaciones vigentes están inventariados en [DOCS/known-limitations.md](DOCS/known-limitations.md). Ver [CHANGELOG.md](CHANGELOG.md).
+**Estado actual:** subsistemas de Fase 3–4 implementados y verificados — WOM-p, SLEC, EBA, RAS+Thermal Governor, ELM/PEP, WEP, ZRP (RS(16,15)), tiering HMT T0/T1, HKDF/PUF/LMS (SP 800-208), XDAM/SDP/CQE y FormalCore. La capa de integración con el sistema operativo (carpetas `platform/linux` y `platform/windows`, con la capa portable compartida `platform/common`) está implementada y **verificada con montaje real en Linux** (39 OK / 0 fallos) e **interoperabilidad bidireccional Linux ↔ Windows**. Sobre ella se añade el **soporte de arquitecturas 8/16/32/64 bits integrado en el núcleo** (`src/core/mfs_arch.c` + `mfs_port_arch.c`, con detección y autoconfiguración de aceleración por hardware), los **drivers L2 para MCU**, las **integraciones para Arduino, ESP-IDF, PlatformIO y MicroPython** sobre la capa común `platform/embedded`, el **puerto RTOS genérico** (`src/core/mfs_port_rtos.c`, con adaptadores nativos de FreeRTOS/Zephyr/ThreadX y registro para el resto) y el **adaptador L2 para medios gestionados** (`platform/common/mfs_l2_managed.c`: SD/eMMC/UFS/USB/NVMe/SATA). Suite completa **1 232 checks / 0 fallos** con `-std=c11 -Wall -Wextra -Werror` sin avisos en Linux y Windows. Los límites y desviaciones vigentes están inventariados en [DOCS/known-limitations.md](DOCS/known-limitations.md). Ver [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -543,6 +567,8 @@ no se pueda ejecutar).
 - **[DOCS/linux-integration.md](DOCS/linux-integration.md)** — 🐧 Integración con Linux: matriz de kernels, requisitos de compilación, instalación, `fstab`, systemd/udev, paquetes deb/rpm, resolución de problemas y validación.
 - **[DOCS/windows-integration.md](DOCS/windows-integration.md)** — 🪟 Integración con Windows 10/11: WinFsp, compilación con MSVC, letra de unidad, tabla de operaciones del Explorador, servicio de automontaje, instalador y validación.
 - **[DOCS/embedded-integration.md](DOCS/embedded-integration.md)** — 🔌 Integración embebida: puerto y arquitectura en el núcleo (8/16/32/64-bit), capa común `platform/embedded`, drivers MCU y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython.
+- **[DOCS/storage-integration.md](DOCS/storage-integration.md)** — 💾 Almacenamiento flash: motores RAW/ZONED/MANAGED, adaptador L2 para medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA), ejemplos y validación.
+- **[DOCS/rtos-integration.md](DOCS/rtos-integration.md)** — ⏱️ RTOS y plataformas de silicio: puerto RTOS genérico, adaptadores nativos (FreeRTOS/Zephyr/ThreadX), plantilla de portado y puntos de enganche (Silicon Labs, TI, Infineon, Renesas).
 - **[DOCS/known-limitations.md](DOCS/known-limitations.md)** — ⚠️ Límites y desviaciones vigentes respecto a la spec.
 - **[DOCS/testing.md](DOCS/testing.md)** — 🧪 Pasos de verificación y privilegios requeridos.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — 🤝 Cómo proponer mejoras, reportar desviaciones respecto a la spec y enviar KATs.

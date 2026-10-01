@@ -113,6 +113,21 @@ static const mfs_media_profile_t PROFILES[MFS_MEDIA_COUNT] = {
      8ull * TIB, 1u << 20, 0u, 4096u, 512u, 512u, 4096u,
      (uint16_t)(MFS_PROF_TRIM | MFS_PROF_CQE | MFS_PROF_ECC_ON_DIE), 1000u, 0u,
      100u},
+
+    /* 12 — SSD SATA (ATA-8/ACS-4, SCSI SBC): bloques lógicos de 512 B o 4 KB y
+     * TRIM por DATA SET MANAGEMENT / UNMAP; sin operación de borrado expuesta
+     * (el FTL del dispositivo la gestiona). */
+    {"SATA", "ATA-8/ACS-4 · SCSI SBC (UNMAP/DSM)", MFS_MEDIA_SATA,
+     MFS_ENGINE_MANAGED, 4ull * TIB, 1u << 20, 0u, 512u, 512u, 512u, 4096u,
+     (uint16_t)(MFS_PROF_TRIM | MFS_PROF_ECC_ON_DIE), 2000u, 0u, 200u},
+
+    /* 13 — UFS (JEDEC JESD220): LUN de bloques de 4 KB, purge/erase group y
+     * command queuing. Cota de perfil: 4 TB. */
+    {"UFS", "JEDEC JESD220 (UFS 3.1/4.0)", MFS_MEDIA_UFS, MFS_ENGINE_MANAGED,
+     4ull * TIB, 4u << 20, 4u << 20, 4096u, 4096u, 4096u, 4096u,
+     (uint16_t)(MFS_PROF_TRIM | MFS_PROF_CQE | MFS_PROF_SUSPEND |
+                MFS_PROF_ECC_ON_DIE),
+     1000u, 10000u, 100u},
 };
 
 const mfs_media_profile_t *mf_media_profile(mfs_media_type_t t) {

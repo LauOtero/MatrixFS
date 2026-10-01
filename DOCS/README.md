@@ -20,6 +20,8 @@ que implementa.
 | [linux-integration.md](linux-integration.md) | Integración con Linux: FUSE 3, kernels, `fstab`, systemd/udev, paquetes | §21, §22 |
 | [windows-integration.md](windows-integration.md) | Integración con Windows 10/11: WinFsp, letra de unidad, Explorador, servicio, instalador | §21, §22 |
 | [embedded-integration.md](embedded-integration.md) | Integración embebida: arquitecturas 8/16/32/64-bit en el núcleo (puerto + `mfs_arch`), capa `platform/embedded`, drivers MCU y ecosistemas Arduino, ESP-IDF, PlatformIO y MicroPython | §3.1, §5, §6, §20, §21, MFS-ARCH-010 rev. 3 |
+| [storage-integration.md](storage-integration.md) | Almacenamiento flash: motores RAW/ZONED/MANAGED, adaptador L2 para medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA), ejemplo y validación | §3.2, §5.1, §8.1, MFS-CAP-001 |
+| [rtos-integration.md](rtos-integration.md) | RTOS y plataformas de silicio: puerto RTOS genérico, adaptadores nativos (FreeRTOS/Zephyr/ThreadX), plantilla de portado y puntos de enganche (Silicon Labs, TI, Infineon, Renesas) | §20.2–§20.3, §13, MFS-HW-001 |
 | [known-limitations.md](known-limitations.md) | Desviaciones y alcance no cubierto | — |
 
 ## Estado
@@ -48,12 +50,14 @@ Integración con el sistema operativo (§21, §22):
 | Capa embebida común (L2 sobre región de flash, `mf_t` + montaje) | `platform/embedded/` | [embedded-integration.md](embedded-integration.md) |
 | Arquitecturas 8/16/32/64-bit: puerto (AVR/8051/STM8/PIC16-18/Z80/genérico) y detección de arquitectura + aceleración HW | `src/core/mfs_port_arch.*`, `src/core/mfs_arch.c` | [embedded-integration.md](embedded-integration.md) |
 | Drivers L2 de dispositivo para MCU (NOR/FRAM/EEPROM SPI-I2C, flash interna, SD-SPI) | `platform/common/mfs_l2_8bit.*` | [embedded-integration.md](embedded-integration.md) |
+| Adaptador L2 para medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA: sectores + TRIM + RMW) | `platform/common/mfs_l2_managed.*` | [storage-integration.md](storage-integration.md) |
+| Puerto RTOS genérico (FreeRTOS/Zephyr/ThreadX nativos + registro) y plantilla de portado | `src/core/mfs_port_rtos.*`, `platform/rtos/` | [rtos-integration.md](rtos-integration.md) |
 | Arduino (ESP32/ESP8266/RP2040), ESP-IDF, PlatformIO, MicroPython | `platform/{arduino,esp-idf,platformio,micropython}/` | [embedded-integration.md](embedded-integration.md) |
 
 Suite de verificación: `make test` (KAT §27.1, puertas §27.7, funcional, FIH
-§27.2, FTL 2, HMT, PQ, XIO, estrés, formal y **capa de integración VFS**) y
-`mfstool bench` / `mfs_tests.exe --extreme` (MFS-Bench §17). Total:
-**1 147 checks / 0 fallos**.
+§27.2, FTL 2, HMT, PQ, XIO, estrés, formal, **capa de integración VFS**,
+**medio gestionado** y **puerto RTOS**) y `mfstool bench` /
+`mfs_tests.exe --extreme` (MFS-Bench §17). Total: **1 232 checks / 0 fallos**.
 
 Validación de los front-ends de plataforma: **montaje real en Linux** con
 `mount -t matrixfs` (FUSE 3) — **39 OK / 0 fallos** — e **interoperabilidad

@@ -49,6 +49,11 @@ void test_gate_mode_matrix(void);
 
 /* Perfiles por tecnología de memoria (MFS-CAP-001) */
 void test_media_profiles(void);
+/* Medio gestionado (SD/eMMC/UFS/SATA/NVMe) sobre el adaptador L2 */
+void test_managed_media(void);
+
+/* Puerto RTOS genérico del núcleo (§20.2) */
+void test_rtos_port(void);
 
 void test_fs_basic(void);
 void test_fs_multipage(void);

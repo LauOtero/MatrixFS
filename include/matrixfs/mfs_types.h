@@ -258,10 +258,12 @@ typedef enum {
   MFS_MEDIA_SD,        /* SD 5.1 managed          */
   MFS_MEDIA_EMMC,      /* eMMC 5.1 managed        */
   MFS_MEDIA_USB,       /* USB flash (MSC/UASP)    */
-  MFS_MEDIA_NVME       /* SSD NVMe (PCIe)         */
+  MFS_MEDIA_NVME,      /* SSD NVMe (PCIe)         */
+  MFS_MEDIA_SATA,      /* SSD SATA (AHCI/ATA)     */
+  MFS_MEDIA_UFS        /* UFS (JEDEC JESD220)     */
 } mfs_media_type_t;
 
-#define MFS_MEDIA_COUNT 12
+#define MFS_MEDIA_COUNT 14
 
 /* ==== Motores de almacenamiento (MFS-CAP-001) ============================
  * El medio decide el motor: la estrategia se adapta a la naturaleza física de

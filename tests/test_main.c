@@ -36,6 +36,12 @@ int main(int argc, char **argv) {
   /* MFS-CAP-001: perfiles por tecnología de memoria */
   test_media_profiles();
 
+  /* Medios gestionados (SD/eMMC/UFS/SATA/NVMe) sobre el adaptador L2 */
+  test_managed_media();
+
+  /* Puerto RTOS genérico del núcleo (§20.2) */
+  test_rtos_port();
+
   /* Funcional */
   test_fs_basic();
   test_fs_multipage();

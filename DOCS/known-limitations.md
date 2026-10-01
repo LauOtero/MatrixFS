@@ -99,6 +99,33 @@ qué **no** está cubierto. Alineado con §26 (lenguaje acotado) y §29.
   `mfs_blk` y del `erase_unit` configurado. En medios gestionados (eMMC/SD/USB)
   manda el FTL del propio dispositivo.
 
+## Almacenamiento flash y RTOS
+
+- **Medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA).** El adaptador L2
+  (`platform/common/mfs_l2_managed.c`) presenta la API de sectores del SDK como
+  driver de MatrixFS, con RMW alineado a sector y TRIM/UNMAP. **No incluye
+  controladores de silicio**: el enganche con el controlador real
+  (SDHCI/UFSHCI/AHCI/NVMe) lo aporta el integrador con 2-3 callbacks de sector.
+  La verificación en host usa un dispositivo gestionado simulado
+  (`tests/vblk_sim.c`); la validación sobre unidades físicas (llenado > 95 %,
+  relectura total, remontajes y FIH) requiere hardware y el banco **F5** de
+  [`media-profiles.md`](media-profiles.md).
+- **SATA y UFS.** Añadidos al modelo de perfiles (MFS-CAP-001) con su geometría
+  y presupuestos; el transporte (AHCI/UniPro) no se reimplementa.
+- **Tope de 4 GiB.** El driver L2 direcciona con 32 bits (véase «Límite de 4 GiB
+  por medio»); las capacidades certificadas de las unidades gestionadas
+  (2–8 TB) exigen el formato v2 de 64 bits (fases F2–F3 de `media-profiles.md`).
+- **Puerto RTOS.** El núcleo trae adaptadores nativos de **FreeRTOS, Zephyr y
+  ThreadX** compilados **solo en el target del RTOS**; en este entorno no se
+  compilan (no hay toolchain del RTOS) y por tanto **no se han verificado en
+  silicio**. Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y PX5 se **detectan** y se
+  resuelven con la plantilla `platform/rtos/mfs_rtos_port_template.c`. En host se
+  verifica la detección, el registro y el contrato §20.2 con un adaptador de
+  prueba (`tests/test_rtos.c`).
+- **SDKs de fabricantes.** Silicon Labs, TI, Infineon y Renesas se integran a
+  través de sus drivers de flash (capa `mfs_embedded` / `mfs_l2_managed`) y de su
+  RTOS (puerto RTOS); no se incluyen proyectos de ejemplo compilados con cada SDK.
+
 ## No cubierto en esta edición
 
 - Certificación SIL-2 / ISO 26262 / IEC 62443 y dossier de seguridad.
@@ -114,7 +141,7 @@ qué **no** está cubierto. Alineado con §26 (lenguaje acotado) y §29.
   libfuse3 3.17.2 real y alcanza ese punto); en Windows, `FspFileSystemCreate`
   devuelve `STATUS_NO_SUCH_DEVICE` sin una sesión elevada con el driver FSD
   accesible. Sí se validan la semántica completa del sistema de archivos (suite
-  `test_vfs` + CLI `matrixfs-ctl`, **1 147 checks / 0 fallos en Linux y en
+  `test_vfs` + CLI `matrixfs-ctl`, **1 232 checks / 0 fallos en Linux y en
   Windows**) y la compilación estricta de los front-ends (FUSE con `-Werror`
   contra libfuse3 real; WinFsp con MSVC `/W4` contra el SDK real). Véase
   [`testing.md`](testing.md).

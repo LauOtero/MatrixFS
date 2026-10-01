@@ -8,6 +8,19 @@ Las entradas referencian secciones de la especificación normativa **MFS-SPEC-00
 
 ## [Unreleased]
 
+### Añadido — Almacenamiento flash gestionado (SATA/UFS) y puerto RTOS genérico
+- 💾 **Medios gestionados completos** (SD/eMMC/UFS/USB/NVMe/SATA):
+  - **Modelo**: nuevos tipos de medio `MFS_MEDIA_SATA` (ATA-8/ACS-4 + SCSI SBC, TRIM/UNMAP) y `MFS_MEDIA_UFS` (JEDEC JESD220 3.1/4.0, motor MANAGED) en `include/matrixfs/mfs_types.h` (`MFS_MEDIA_COUNT` = 14) con sus perfiles y presupuestos en `src/core/mfs_profile.c` (MFS-CAP-001).
+  - **Adaptador L2 `platform/common/mfs_l2_managed.{h,c}`** (nuevo): presenta la API de **sectores** del SDK como `mfs_l2_driver` de MatrixFS, con traducción byte-offset ⇄ LBA, **RMW alineado a sector** (buffer aportado por el integrador, sin heap) y **TRIM/UNMAP** en `erase()`. Deriva la geometría del dispositivo y valida el motor MANAGED.
+  - **Simulador `tests/vblk_sim.{h,c}`** (nuevo): dispositivo gestionado en memoria (imagen a `0xFF`, contadores de E/S y TRIM, fallo inyectable).
+  - **`tests/test_managed.c`** (nuevo): rechazo de medios RAW, geometría derivada, `mf_format`+TRIM, E/S de 700 B (no múltiplo de sector ⇒ RMW), remontaje/persistencia, idempotencia y fallo tipificado `MFS_EIO`.
+- ⏱️ **Puerto RTOS genérico en el núcleo** (§20.2):
+  - **`include/matrixfs/mfs_port_rtos.h` + `src/core/mfs_port_rtos.c`** (nuevos): detección en tiempo de compilación del RTOS huésped, **adaptadores nativos** de **FreeRTOS** (`taskENTER/EXIT_CRITICAL`), **Zephyr RTOS** (`irq_lock/unlock`, `k_cycle_get_32`) y **Eclipse ThreadX** (`tx_interrupt_control`, `tx_time_get`), **registro por el integrador** (`mfs_port_rtos_register`) para Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y PX5, y despacho de las cinco primitivas del contrato. Envoltorio `MFS_PORT_RTOS_GLUE` (excluyente con `MFS_PORT_ARCH_GLUE`, guarda `MFS-PORT-001`).
+  - **`platform/rtos/mfs_rtos_port_template.c`** (nuevo): plantilla de portado con la llamada nativa de cada RTOS.
+  - **`tests/test_rtos.c`** (nuevo): detección, nombres, activación/idempotencia, despacho, validación de registro y sustitución por adaptador del integrador.
+- 📘 **Documentación**: nuevas guías [DOCS/storage-integration.md](DOCS/storage-integration.md) y [DOCS/rtos-integration.md](DOCS/rtos-integration.md); actualizados `README.md`, `DOCS/README.md`, `DOCS/known-limitations.md` y `CHANGELOG.md`.
+- ✅ **Verificación**: suite ampliada a **1 232 checks / 0 fallos** (host Windows, gcc 16.1, `-Wall -Wextra -Werror`). Pendiente y explícitamente marcado como **no verificado**: adaptadores nativos compilados en el target de cada RTOS y validación sobre unidades físicas (requiere el banco F5 y hardware).
+
 ### Añadido — Arquitecturas 8/16/32/64-bit en el núcleo (MFS-ARCH-010 rev. 3) y ecosistemas embebidos
 - 🟪 **Modelo de arquitectura unificado en el núcleo**: el soporte de 8 bits deja de ser una capa aparte y pasa a integrarse como las clases de 16 y 32 bits, y se añade **64 bits**.
   - **`src/core/mfs_arch.c`** (nuevo): clasifica el objetivo en **8/16/32/64 bits** (o `MFS_ARCH_AUTO` = autodetección) y **detecta y autoconfigura la aceleración por hardware** (`MFS_HWACCEL_CRC32C/AES/SHA256/CLMUL/SIMD/RNG/ATOMICS`) combinando macros del compilador con refinado en runtime (x86 `__builtin_cpu_supports`/CPUID). `mfs_arch_info_t`, `mfs_arch_class_t` y `MFS_ARCH_AUTO` viven en `include/matrixfs/mfs_types.h`.
