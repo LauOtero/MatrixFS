@@ -8,9 +8,6 @@
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Salvo que la ley aplicable exija lo contrario o se acuerde por escrito, el
-# software distribuido bajo la Licencia se distribuye "TAL CUAL", SIN GARANTIAS
-# NI CONDICIONES DE NINGUN TIPO, ni expresas ni implicitas.
 # SPDX-License-Identifier: Apache-2.0
 
 menu "MatrixFS"
@@ -24,13 +21,18 @@ menu "MatrixFS"
             (se busca con ESP_PARTITION_TYPE_DATA y cualquier subtipo).
 
     config MATRIXFS_RAM_BUDGET
-        int "Presupuesto de RAM asignado a MatrixFS (bytes)"
+        int "Presupuesto de RAM declarado a MatrixFS (bytes)"
         default 32768
         range 512 1048576
         help
             RAM que MatrixFS declara al planificador de viabilidad para elegir
             el modo operativo. Un valor menor puede degradar el modo (y con el
             el tamano de chunk y los limites de volumen/fichero).
+
+            AVISO: este valor NO reserva memoria. El consumo real del nucleo se
+            fija en COMPILACION (ver MATRIXFS_L2P_SLOTS, MATRIXFS_ZONE_MAX) y
+            es bastante mayor que este numero en el build por defecto. Consulta
+            la seccion "Presupuesto de RAM" del README antes de ajustarlo.
 
     config MATRIXFS_FORMAT_IF_NEEDED
         bool "Formatear automaticamente si el volumen no es valido"
@@ -39,6 +41,19 @@ menu "MatrixFS"
             Si el volumen no se puede montar (ausente o corrupto), se formatea
             y se reintenta el montaje una vez. Desactivado por defecto para no
             destruir datos de forma accidental.
+
+    config MATRIXFS_THREAD_SAFE
+        bool "Serializar la API con un mutex recursivo (recomendado)"
+        default y
+        help
+            El nucleo de MatrixFS NO es reentrante (estado global: mapa L2P,
+            pools, ventana WAL y de inodos). Una aplicacion ESP-IDF es
+            multitarea, de modo que sin serializacion dos tareas que usen el
+            volumen pueden corromperlo.
+
+            Con esta opcion activa, toda la superficie publica del componente
+            toma un mutex recursivo de FreeRTOS. Desactivala SOLO si garantizas
+            que el volumen se usa desde una unica tarea.
 
     choice MATRIXFS_FORCE_MODE
         prompt "Modo operativo del volumen"
@@ -83,5 +98,123 @@ menu "MatrixFS"
             ADVERTENCIA: este valor queda en texto claro en sdkconfig; para
             produccion conviene obtenerlo de eFuse o de NVS en tiempo de
             ejecucion y no de Kconfig.
+
+    menu "Capacidad y consumo de RAM"
+
+        config MATRIXFS_L2P_SLOTS
+            int "Entradas del mapa logico->fisico (potencia de dos)"
+            default 4096
+            range 256 1048576
+            help
+                Numero de entradas de la tabla estatica L2P (8 B por entrada, en
+                .bss). Fija cuantas paginas logicas pueden mapearse a la vez:
+
+                    capacidad_mapeable ~= MATRIXFS_L2P_SLOTS * chunk_size
+
+                Con chunk de 4096 B, 4096 entradas cubren ~16 MiB: mas que
+                suficiente para cualquier particion razonable en ESP32. Bajarlo
+                ahorra RAM a costa de capacidad; subirlo la aumenta.
+
+                ADVERTENCIA: es una tabla de hash; un valor demasiado bajo para
+                el volumen usado provoca MFS_ETABLEFULL (traducido a ENOSPC).
+                Para un volumen de V bytes con chunk C, usa al menos 2*V/C.
+
+        config MATRIXFS_ZONE_MAX
+            int "Maximo de zonas ZLF en RAM"
+            default 128
+            range 16 1024
+            help
+                Cota de zonas direccionables (la tabla vive dentro de mf_t, unos
+                96 B por zona). Limita tambien el volumen util:
+
+                    capacidad_util ~= MATRIXFS_ZONE_MAX * erase_unit
+
+                Con erase_unit de 4096 B (particion NOR normal) 128 zonas dan
+                512 KiB. Para aprovechar una particion mayor hay que subir este
+                valor (y la RAM en consecuencia).
+
+        config MATRIXFS_MAX_FILES_OPEN
+            int "Ficheros abiertos simultaneos"
+            default 32
+            range 2 64
+            help
+                Descriptores de fichero residentes (tabla de inodos, en .bss).
+                Se traduce al macro MFS_MAX_FILES_OPEN del nucleo: bajarlo reduce
+                RAM a costa de menos ficheros abiertos a la vez.
+
+        config MATRIXFS_WAL_WINDOW_MAX
+            int "Ventana WAL maxima (entradas)"
+            default 256
+            range 16 256
+            help
+                Tamano maximo de la ventana WAL (MFS_WAL_WINDOW_MAX): mas
+                entradas agrupan mas transacciones, a costa de mas .bss.
+
+        config MATRIXFS_SCRATCH_MAX
+            int "Scratch de pagina (bytes)"
+            default 4096
+            range 256 8192
+            help
+                Tamano del scratch de una pagina logica (MFS_SCRATCH_MAX). Varias
+                rutas del nucleo declaran este buffer EN LA PILA, de modo que
+                tambien fija la pila minima de la tarea. Bajarlo reduce RAM/pila.
+
+    endmenu
+
+    menu "Integracion POSIX (VFS)"
+
+        config MATRIXFS_VFS_ENABLE
+            bool "Registrar el volumen en el VFS (fopen/stat/opendir)"
+            default n
+            help
+                Registra MatrixFS en el sistema de archivos virtual de ESP-IDF
+                para poder usar la API POSIX (fopen, fread, fwrite, stat,
+                opendir...) sobre el volumen, como hacen SPIFFS y FAT.
+
+        config MATRIXFS_VFS_MOUNT_POINT
+            string "Punto de montaje"
+            depends on MATRIXFS_VFS_ENABLE
+            default "/matrixfs"
+            help
+                Prefijo de ruta bajo el que se expone el volumen (p. ej.
+                "/matrixfs" hace que "/matrixfs/hola.txt" sea el fichero
+                "/hola.txt" del volumen). Debe empezar por '/'.
+
+        config MATRIXFS_VFS_MAX_FILES
+            int "Descriptores simultaneos maximos"
+            depends on MATRIXFS_VFS_ENABLE
+            default 8
+            range 1 64
+
+    endmenu
+
+    menu "Geometria del medio"
+
+        config MATRIXFS_PAGE_SIZE
+            int "Tamano de pagina de programacion (bytes)"
+            default 256
+            range 1 65536
+            help
+                Pagina de programacion del medio. En la flash NOR/SPI de ESP32
+                es 256 B.
+
+                IDF-07: es PURAMENTE DECLARATIVA. Se publica al nucleo en el HWV
+                (diagnostico y viabilidad), pero el backend NO trocea por ella:
+                `esp_partition_write` resuelve internamente los cruces de
+                frontera de pagina. Cambiarla no altera la semantica de E/S.
+
+        config MATRIXFS_T_PROG_MAX_US
+            int "Presupuesto de programacion (us)"
+            default 700
+
+        config MATRIXFS_T_ERASE_MAX_US
+            int "Presupuesto de borrado de sector (us)"
+            default 45000
+
+        config MATRIXFS_T_READ_MAX_US
+            int "Presupuesto de lectura (us)"
+            default 100
+
+    endmenu
 
 endmenu

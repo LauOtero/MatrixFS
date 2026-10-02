@@ -33,6 +33,49 @@
 #define MFS_HWCRC_ARM 0
 #endif
 
+/* ==== Detección de extensiones por macros del compilador ================
+ * El compilador define __ARM_FEATURE_* cuando compila PARA un núcleo que
+ * posee la extensión, de modo que la decisión es de COMPILACIÓN (determinista)
+ * y no requiere sondear registros en runtime:
+ *   · __ARM_FEATURE_DSP / __ARM_FEATURE_SIMD32 ⇒ instrucciones DSP de Cortex-M4
+ *     /M7/M33 (SMUAD, SMLAD, PKHBT...);
+ *   · __ARM_FEATURE_MVE ⇒ MVE/Helium de Cortex-M55/M85 (vectorización 128-bit).
+ */
+#if defined(__ARM_FEATURE_DSP) || defined(__ARM_FEATURE_SIMD32)
+#define MFS_HWDSP_ARM 1
+#else
+#define MFS_HWDSP_ARM 0
+#endif
+
+#if defined(__ARM_FEATURE_MVE)
+#define MFS_HWMVE_ARM 1
+#else
+#define MFS_HWMVE_ARM 0
+#endif
+
+/* ==== Número de núcleos ==================================================
+ * El núcleo es C puro y no incluye cabeceras de plataforma, de modo que los
+ * núcleos se toman de los macros que las plataformas más comunes publican en
+ * configuración COMPILADA. El integrador puede forzarlo con -DMFS_ARCH_CORES=n.
+ * Si no hay señal alguna se asume 1 (conservador y determinista). */
+#ifndef MFS_ARCH_CORES
+#if defined(CONFIG_MP_MAX_NUM_CPUS)
+#define MFS_ARCH_CORES CONFIG_MP_MAX_NUM_CPUS /* Zephyr                    */
+#elif defined(CONFIG_NUM_CORES)
+#define MFS_ARCH_CORES CONFIG_NUM_CORES /* NuttX                     */
+#elif defined(configNUM_CORES)
+#define MFS_ARCH_CORES configNUM_CORES /* FreeRTOS SMP             */
+#elif defined(portNUM_PROCESSORS)
+#define MFS_ARCH_CORES portNUM_PROCESSORS /* ESP-IDF (si es visible) */
+#else
+#define MFS_ARCH_CORES 1
+#endif
+#endif
+
+static uint8_t arch_detect_cores(void) {
+  return (MFS_ARCH_CORES > 0) ? (uint8_t)MFS_ARCH_CORES : 1u;
+}
+
 #if MFS_HWCRC_X86
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -77,16 +120,19 @@ static uint32_t crc32c_inst(const uint8_t *buf, uint32_t len, uint32_t c) {
 }
 #endif /* MFS_HWCRC_X86 || MFS_HWCRC_ARM */
 
-/* Detección de CPU para SSE4.2 (bit ECX[20] de CPUID.1) */
+#if MFS_HWCRC_X86
+/* Deteccion de CPU para SSE4.2 (bit ECX[20] de CPUID.1). Solo se compila en
+ * x86: en ARM (CRC32 por macro o inexistente) esta funcion quedaria SIN USAR y
+ * el compilador avisa de ello (-Wunused-function). */
 static bool crc32c_x86_supported(void) {
-#if MFS_HWCRC_X86 && (defined(__GNUC__) || defined(__clang__))
+#if defined(__GNUC__) || defined(__clang__)
   static int cached = -1;
   if (cached < 0) {
     __builtin_cpu_init();
     cached = __builtin_cpu_supports("sse4.2") ? 1 : 0;
   }
   return cached != 0;
-#elif MFS_HWCRC_X86 && defined(_MSC_VER)
+#elif defined(_MSC_VER)
   static int cached = -1;
   if (cached < 0) {
     int regs[4] = {0, 0, 0, 0};
@@ -98,6 +144,7 @@ static bool crc32c_x86_supported(void) {
   return false;
 #endif
 }
+#endif /* MFS_HWCRC_X86 */
 
 bool mfs_arch_crc32c_hw_available(void) {
 #if MFS_HWCRC_X86
@@ -144,6 +191,15 @@ static uint16_t arch_detect_hwaccel(void) {
 #if defined(__SSE2__) || defined(__AVX2__) || defined(__ARM_NEON) ||           \
     defined(__ARM_NEON__) || defined(__riscv_v)
   f |= MFS_HWACCEL_SIMD;
+#endif
+  /* DSP/Helium: se detectan por separado del SIMD "clásico" (NEON/AVX), porque
+   * son extensiones de MCU y habilitan rutinas de filtrado/CRC por DSP. */
+#if MFS_HWDSP_ARM
+  f |= MFS_HWACCEL_DSP;
+#endif
+#if MFS_HWMVE_ARM
+  f |= MFS_HWACCEL_MVE;
+  f |= MFS_HWACCEL_SIMD; /* Helium ES vectorización (128-bit) */
 #endif
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4) || defined(__cplusplus) ||     \
     defined(_WIN32)
@@ -231,25 +287,43 @@ mfs_st mfs_arch_detect(mfs_arch_info_t *out) {
 
   arch_defaults_by_class(out->arch_class, out);
   out->hwaccel = arch_detect_hwaccel();
+  out->cores = arch_detect_cores();
   out->name = arch_name_by_class(out->arch_class);
   return MFS_OK;
 }
 
-/* ==== Autoadaptación de la configuración ==== */
+/* ==== Motor de autoajuste determinista (Fase 3) ====
+ *
+ * DECIDE UNA SOLA VEZ, en el arranque, los parámetros que el integrador no
+ * declaró. Reglas invariantes:
+ *   · NUNCA sobreescribe un valor declarado explícitamente (distinto de 0 o de
+ *     MFS_ARCH_AUTO); el determinismo exige que la decisión dependa sólo de la
+ *     arquitectura detectada y de lo declarado, no del historial de ejecución;
+ *   · no hay ajustes posteriores en runtime (nada que rompa la reproducibilidad
+ *     P1/P12): esta función es idempotente y pura respecto de `info`.
+ *
+ * Qué decide:
+ *   1. arch_class: resuelve MFS_ARCH_AUTO a la clase detectada;
+ *   2. ram_total: si es 0 en un MCU de 8 bits, usa la cota por defecto;
+ *   3. bus_speed_hz: si es 0 en 8 bits, deriva F_CPU/2 (cota conservadora).
+ */
 mfs_st mfs_arch_adapt_config(const mfs_arch_info_t *info, mfs_config *cfg) {
   if (!info || !cfg)
     return MFS_EINVAL;
 
-  /* Clase: autodetectar sólo si no se forzó explícitamente */
+  /* 1. Clase: autodetectar sólo si se pidió AUTO. */
   if (cfg->arch_class == (uint8_t)MFS_ARCH_AUTO)
     cfg->arch_class = info->arch_class;
 
-  /* RAM: respetar la declarada; si es 0 (y el MCU es de 8 bits) usar la cota */
+  /* 2. RAM: respetar la declarada; si es 0 (y el MCU es de 8 bits) usar la
+   *    cota detectada. En 16/32/64 bits el presupuesto lo debe declarar el
+   *    integrador (una RAM inventada produciría un modo inviable). */
   if (cfg->ram_total == 0u && info->arch_class == MFS_ARCH_8BIT)
     cfg->ram_total = info->ram_total;
 
-  /* Velocidad de bus: si no se declara, derivar de F_CPU en 8-bit (SPI/I2C a
-   * F_CPU/2 como cota conservadora). En 32/64 bits la mide el HAL (§14.2). */
+  /* 3. Velocidad de bus: si no se declara, derivar de F_CPU en 8-bit (SPI/I2C a
+   *    F_CPU/2 como cota conservadora). En 32/64 bits la mide el HAL (§14.2).
+   */
   if (cfg->bus_speed_hz == 0u && info->f_cpu_hz != 0u &&
       info->arch_class == MFS_ARCH_8BIT)
     cfg->bus_speed_hz = info->f_cpu_hz / 2u;

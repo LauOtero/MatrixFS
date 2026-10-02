@@ -34,30 +34,56 @@ typedef struct {
   /* SPI/I2C: funciones de bus (debe proveer el BSP) */
   mfs_st (*spi_init)(void *ctx);
   mfs_st (*spi_deinit)(void *ctx);
+  /* `len` es el número REAL de bytes a transferir. Se declara de 32 bits: con
+   * 16 se truncaban en silencio las transferencias > 64 KiB. El BSP puede
+   * trocear internamente si su controlador tiene un límite menor. */
   mfs_st (*spi_transfer)(void *ctx, const uint8_t *tx, uint8_t *rx,
-                         uint16_t len);
+                         uint32_t len);
   mfs_st (*spi_cs_low)(void *ctx);
   mfs_st (*spi_cs_high)(void *ctx);
 
-  /* I2C específico */
+  /* I2C específico (FRAM/EEPROM I2C: MB85RSxx, 24AA/24LCxx).
+   *
+   * Se declaran operaciones de MEMORIA (dirección de memoria + datos), no
+   * transferencias crudas: es lo que el dispositivo necesita (enviar la word
+   * address y luego leer/escribir) y lo que ofrece el HAL (`HAL_I2C_Mem_Read` /
+   * `HAL_I2C_Mem_Write`), que además resuelve el repeated-START. */
   mfs_st (*i2c_init)(void *ctx);
   mfs_st (*i2c_deinit)(void *ctx);
-  mfs_st (*i2c_write)(void *ctx, uint8_t addr, const uint8_t *data,
-                      uint16_t len);
-  mfs_st (*i2c_read)(void *ctx, uint8_t addr, uint8_t *data, uint16_t len);
+  mfs_st (*i2c_mem_read)(void *ctx, uint8_t dev, uint32_t mem_addr,
+                         uint16_t mem_addr_bytes, uint8_t *dst, uint32_t len);
+  mfs_st (*i2c_mem_write)(void *ctx, uint8_t dev, uint32_t mem_addr,
+                          uint16_t mem_addr_bytes, const uint8_t *src,
+                          uint32_t len);
+  /* Dirección I2C de 7 bits del dispositivo (FRAM/EEPROM I2C). */
+  uint8_t i2c_addr;
 
-  /* Flash interna: funciones de bajo nivel */
+  /* Flash interna: funciones de bajo nivel. `addr` es ABSOLUTA en el mapa del
+   * MCU. `iflash_write` debe respetar la unidad de programación del
+   * dispositivo (y su ECC) y retornar solo tras confirmar (barrera WOB);
+   * `iflash_erase_page` borra la unidad de borrado que contiene `addr`. */
   mfs_st (*iflash_init)(void *ctx);
   mfs_st (*iflash_erase_page)(void *ctx, uint32_t addr);
   mfs_st (*iflash_write)(void *ctx, uint32_t addr, const uint8_t *data,
-                         uint16_t len);
-  mfs_st (*iflash_read)(void *ctx, uint32_t addr, uint8_t *data, uint16_t len);
+                         uint32_t len);
+  mfs_st (*iflash_read)(void *ctx, uint32_t addr, uint8_t *data, uint32_t len);
 
   /* Parámetros del dispositivo */
   uint32_t total_size; /* Tamaño total en bytes */
-  uint32_t page_size;  /* Tamaño de página (programación) */
+  uint32_t page_size;  /* Tamaño de página de PROGRAMACIÓN del dispositivo.
+                        * En NOR SPI es la página de Page Program (256 B): una
+                        * orden PP NO puede cruzar esa frontera. En EEPROM es la
+                        * página de escritura (page write, 32/64 B). */
   uint32_t
       erase_size; /* Tamaño de sector/block erase (0 = no erase necesario) */
+  /* Mínimo programable en bytes (NOR/EEPROM byte a byte: 1; flash interna de
+   * un STM32F4: 4; L4/G4: 8; H7: 16). Se propaga a mfs_media_geom. */
+  uint32_t pgm_gran;
+  /* El dispositivo lleva ECC propia (flash interna de un MCU, NOR con ECC
+   * interna). Se declara en el HWV (MFS_HWV0_ECC_ON_DIE) y hace que el núcleo
+   * elija la clase ECC más tolerante. NO se deduce de `pgm_gran`: un STM32F4
+   * programa de 4 en 4 bytes y no tiene ECC. */
+  bool ecc_on_die;
   uint16_t addr_bytes;  /* Bytes de dirección: 2 o 3 (SPI) */
   uint8_t addr_width;   /* 16 o 24 bits */
   bool has_quad_spi;    /* Soporte Quad SPI */

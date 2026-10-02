@@ -42,3 +42,28 @@ keys/
 .idea/
 *.swp
 *~
+
+# CMake / Ninja (incluye los proyectos de prueba de las plataformas)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+.ninja_log
+.ninja_deps
+.ninja_lock
+.cache/
+
+# ESP-IDF: artefactos GENERADOS de un proyecto. OJO: sdkconfig.defaults SÍ es
+# fuente y NO se ignora (aquí solo `sdkconfig` y `sdkconfig.old`).
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+
+# Python
+__pycache__/
+*.py[cod]
+
+# SDKs y toolchains instalados LOCALMENTE para validación (ESP-IDF, ARM GCC,
+# STM32Cube, venv): no se versionan. Ver DOCS/platform-optimization-report.md §9.
+.tools/

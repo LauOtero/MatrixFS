@@ -212,18 +212,22 @@ integridad la cubre **CRC-32C**.
 
 | Símbolo | Función |
 |---|---|
-| `mfs_arch_detect(mfs_arch_info_t *out)` | Clasifica la arquitectura (`arch_class`, `bits`, nombre y cotas por defecto) y detecta los aceleradores. |
-| `mfs_arch_adapt_config(info, cfg)` | Autoconfigura `arch_class`, `ram_total` (8-bit) y velocidad de bus. |
+| `mfs_arch_detect(mfs_arch_info_t *out)` | Clasifica la arquitectura (`arch_class`, `bits`, `cores`, nombre y cotas por defecto) y detecta los aceleradores. |
+| `mfs_arch_adapt_config(info, cfg)` | Motor de autoajuste **determinista**: resuelve `arch_class` (si es `MFS_ARCH_AUTO`), `ram_total` (8-bit) y velocidad de bus; **una sola vez** y sin sobreescribir valores declarados. |
 | `mfs_arch_crc32c_hw_available()` | ¿Existe ruta CRC-32C por instrucción en esta CPU? |
 | `mfs_crc32c_hw(buf, len, seed)` | CRC-32C por instrucción (idéntico a la tabla). |
 | `mf_arch_last()` | Último análisis (diagnóstico/tests). |
 
 **Capacidades detectadas** (`mfs_arch_info_t.hwaccel`, bits `MFS_HWACCEL_*`):
-CRC-32C por instrucción, AES, SHA-256, CLMUL, SIMD, RNG y CAS atómicos. La
-detección combina macros del compilador (`__AES__`, `__ARM_FEATURE_CRYPTO`,
-`__ARM_FEATURE_CRC32`, `__PCLMUL__`, `__SSE2__/__AVX2__`, …) con un **refinado en
-runtime** en x86 (`__builtin_cpu_supports` / `CPUID`), de modo que un mismo
-binario no asume extensiones que la CPU no tenga.
+CRC-32C por instrucción, AES, SHA-256, CLMUL, SIMD, **DSP** (`__ARM_FEATURE_DSP`/
+`__ARM_FEATURE_SIMD32`, Cortex-M4/M7/M33), **MVE/Helium** (`__ARM_FEATURE_MVE`,
+Cortex-M55/M85), RNG y CAS atómicos. La detección combina macros del compilador
+(`__AES__`, `__ARM_FEATURE_CRYPTO`, `__ARM_FEATURE_CRC32`, `__PCLMUL__`,
+`__SSE2__/__AVX2__`, …) con un **refinado en runtime** en x86
+(`__builtin_cpu_supports` / `CPUID`), de modo que un mismo binario no asume
+extensiones que la CPU no tenga. El número de núcleos (`cores`) se toma de
+`MFS_ARCH_CORES` o de macros de plataforma (`CONFIG_MP_MAX_NUM_CPUS`,
+`configNUM_CORES`, `portNUM_PROCESSORS`); por defecto 1.
 
 **Aceleración efectiva hoy**: `mfs_crc32c()` usa automáticamente la instrucción
 CRC32 cuando está disponible (x86 SSE4.2, ARMv8 CRC32). Ambas implementan el

@@ -79,3 +79,80 @@ if (MATRIXFS_BUILD_MCU)
     ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/platform/common)
 endif()
+
+# --- Verificación de los ports de plataforma EN HOST (opcional) ---
+# Compila el código real de platform/esp-idf y platform/stm32cube contra el
+# núcleo real y los shims de SDK, y ejecuta las suites. Es la forma de verificar
+# estas integraciones sin los SDK instalados; con `make platform-test` se hace lo
+# mismo sin CMake.
+#
+#   cmake -DMATRIXFS_PLATFORM_TESTS=ON ..
+#
+# Se exige GCC/Clang porque los shims usan -include para reclamar la guarda de
+# <dirent.h> (el struct dirent de MinGW no lleva d_type).
+option(MATRIXFS_PLATFORM_TESTS "Compila y ejecuta los tests de los ports de plataforma" OFF)
+if (MATRIXFS_PLATFORM_TESTS)
+  if (MSVC)
+    message(FATAL_ERROR "MATRIXFS_PLATFORM_TESTS requiere GCC o Clang (los shims usan -include).")
+  endif()
+
+  set(MFS_CORE_NOPORT ${CORE_SRC})
+  list(REMOVE_ITEM MFS_CORE_NOPORT
+    ${CMAKE_SOURCE_DIR}/src/core/mfs_port_arch.c
+    ${CMAKE_SOURCE_DIR}/src/core/mfs_port_rtos.c)
+
+  add_executable(mfs_esp_test
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/test/test_esp_idf.c
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/test/esp_partition_fake.c
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/test/shims/idf_shim.c
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/matrixfs_esp.c
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/matrixfs_esp_vfs.c
+    ${CMAKE_SOURCE_DIR}/platform/embedded/mfs_embedded.c
+    ${MFS_CORE_NOPORT})
+  target_include_directories(mfs_esp_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/test/shims
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf
+    ${CMAKE_SOURCE_DIR}/platform/esp-idf/include
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/platform/embedded ${CMAKE_SOURCE_DIR}/tests)
+  # Perfil de IDF emulado: 1 = v5.x, 2 = v6.x (el banco soporta ambos).
+  target_compile_definitions(mfs_esp_test PRIVATE MATRIXFS_SHIM_IDF_PROFILE=1)
+  target_compile_options(mfs_esp_test PRIVATE
+    -include ${CMAKE_SOURCE_DIR}/platform/esp-idf/test/shims/esp_vfs.h)
+  add_test(NAME matrixfs_esp_idf_host COMMAND mfs_esp_test)
+
+  # STM32Cube: cuatro variantes de unidad de programacion y ECC.
+  foreach (variant "2:0" "4:0" "8:1" "16:1")
+    string(REPLACE ":" ";" parts "${variant}")
+    list(GET parts 0 unit)
+    list(GET parts 1 ecc)
+    set(tname "mfs_stm32_test_u${unit}_e${ecc}")
+    add_executable(${tname}
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/test/test_stm32.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/test/stubs_backends.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/test/shims/stm32_hal_shim.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/matrixfs_stm32.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/mfs_stm32_backend.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/mfs_stm32_flash_map.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/mfs_stm32_hal.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/mfs_stm32_port.c
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src/mfs_stm32_iflash.c
+      ${CMAKE_SOURCE_DIR}/platform/embedded/mfs_embedded.c
+      ${CMAKE_SOURCE_DIR}/platform/common/mfs_sectors.c
+      ${CMAKE_SOURCE_DIR}/platform/common/mfs_l2_8bit.c
+      ${CMAKE_SOURCE_DIR}/platform/common/mfs_l2_managed.c
+      ${MFS_CORE_NOPORT})
+    target_include_directories(${tname} PRIVATE
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/test/shims
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/include
+      ${CMAKE_SOURCE_DIR}/platform/stm32cube/src
+      ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src
+      ${CMAKE_SOURCE_DIR}/platform/embedded ${CMAKE_SOURCE_DIR}/platform/common
+      ${CMAKE_SOURCE_DIR}/tests)
+    target_compile_definitions(${tname} PRIVATE
+      MFS_STM32_HOST_TEST=1
+      MFS_STM32_HOST_PGM_UNIT=${unit}
+      MFS_STM32_HOST_ECC=${ecc})
+    add_test(NAME matrixfs_stm32_host_u${unit}_e${ecc} COMMAND ${tname})
+  endforeach()
+endif()

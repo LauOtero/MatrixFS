@@ -52,6 +52,57 @@ void mfs_embedded_opts_default(mfs_embedded_opts *o) {
   o->format_if_needed = false;
 }
 
+/* ==== bind: mfs_config a partir de un driver L2 ya construido ====
+ *
+ * Punto ÚNICO de traducción de mfs_embedded_opts a mfs_config. Lo usan
+ * mfs_embedded_setup() (medios de región plana) y los ports que registran un
+ * mfs_l2_driver propio (medios gestionados, drivers de dispositivo MCU).
+ */
+mfs_st mfs_embedded_bind(mfs_config *cfg, const mfs_l2_driver *drv,
+                         const mfs_media_geom *geom,
+                         const mfs_embedded_opts *o) {
+  if (!cfg || !drv || !geom)
+    return MFS_EINVAL;
+
+  mfs_embedded_opts def;
+  if (!o) {
+    mfs_embedded_opts_default(&def);
+    o = &def;
+  }
+
+  memset(cfg, 0, sizeof(*cfg));
+  cfg->drv = drv;
+  cfg->geom = geom;
+  cfg->arch_class = o->arch_class ? o->arch_class : 2u;
+  cfg->forced_mode = o->forced_mode;
+  cfg->ram_total = o->ram_total;
+  cfg->key = o->key;
+  cfg->suite_preferred = o->suite_preferred;
+  cfg->bus_speed_hz = o->bus_speed_hz;
+  cfg->allow_convergent = o->allow_convergent;
+  cfg->dedup_enable = o->dedup_enable;
+  cfg->cdc_enable = o->cdc_enable;
+  cfg->zrp_enable = o->zrp_enable;
+  cfg->dab_enable = o->dab_enable;
+  cfg->default_uid = o->uid;
+  cfg->default_gid = o->gid;
+  cfg->default_file_perm = o->file_perm ? o->file_perm : MFS_DEFAULT_FILE_MODE;
+  cfg->default_dir_perm = o->dir_perm ? o->dir_perm : MFS_DEFAULT_DIR_MODE;
+
+  /* Fase 3: motor de autoajuste DETERMINISTA. Se ejecuta UNA VEZ aquí (arranque
+   * / montaje) y sólo rellena lo que el integrador dejó sin declarar (0 o
+   * MFS_ARCH_AUTO): resuelve la clase, la RAM por defecto en 8-bit y la
+   * velocidad de bus derivada. Nunca sobreescribe un valor explícito ni vuelve
+   * a ajustar en runtime, de modo que la configuración queda congelada y es
+   * reproducible. */
+  {
+    mfs_arch_info_t ai;
+    if (mfs_arch_detect(&ai) == MFS_OK)
+      (void)mfs_arch_adapt_config(&ai, cfg);
+  }
+  return MFS_OK;
+}
+
 /* ==== setup: drv + geom + cfg ==== */
 mfs_st mfs_embedded_setup(mfs_embedded_flash_t *flash,
                           const mfs_embedded_opts *o) {
@@ -60,6 +111,16 @@ mfs_st mfs_embedded_setup(mfs_embedded_flash_t *flash,
   if (flash->size == 0u || flash->erase_unit == 0u)
     return MFS_EINVAL;
   if (!flash->no_erase && !flash->erase)
+    return MFS_EINVAL;
+  /* `erase_unit` dimensiona el layout reservado (SB A @0, SB B @1·EU, anillo de
+   * tokens @2·EU, zonas desde @3·EU — src/mfs_internal.h) y el núcleo además
+   * fuerza EU >= 1024 B (src/core/mfs_hal.c). Declarar una unidad menor haría
+   * que el núcleo creyera que borra 4096 B cuando el backend borra menos, con
+   * corrupción silenciosa: se rechaza de forma explícita.
+   * En medios byte-direccionables (FRAM/MRAM/EEPROM, no_erase=true) la unidad
+   * sigue siendo necesaria: es la granularidad de ZONA del layout, no la del
+   * borrado. Usar 4096 salvo motivo justificado. */
+  if (flash->erase_unit < 1024u)
     return MFS_EINVAL;
 
   mfs_embedded_opts def;
@@ -89,36 +150,28 @@ mfs_st mfs_embedded_setup(mfs_embedded_flash_t *flash,
   flash->geom.base_addr = 0u;
   flash->geom.size = flash->size;
   flash->geom.erase_unit = flash->erase_unit;
-  flash->geom.program_granularity = 1u; /* NOR programable byte a byte */
+  /* Unidad mínima de programación REAL del dispositivo. El núcleo no trocea
+   * por ella: es el callback `prog` del integrador quien debe hacer el
+   * read-modify-write. Se propaga al HWV para diagnóstico y viabilidad. */
+  flash->geom.program_granularity =
+      flash->program_granularity ? flash->program_granularity : 1u;
   flash->geom.page_size = flash->page_size;
   flash->geom.oob_bytes = 0u;
   flash->geom.t_prog_max_us = flash->t_prog_max_us;
   flash->geom.t_erase_max_us = flash->t_erase_max_us;
   flash->geom.t_read_max_us = flash->t_read_max_us;
-  flash->geom.flags1 = flash->no_erase ? MFS_HWV1_BYTE_ADDR : 0u;
+  flash->geom.flags0 = flash->flags0_extra;
+  flash->geom.flags1 =
+      (uint8_t)((flash->no_erase ? MFS_HWV1_BYTE_ADDR : 0u) |
+                flash->flags1_extra);
   flash->geom.zones_per_block = 1u;
   flash->geom.zone_size = flash->erase_unit;
 
   memset(&flash->cfg, 0, sizeof(flash->cfg));
-  flash->cfg.drv = &flash->drv;
-  flash->cfg.geom = &flash->geom;
-  flash->cfg.arch_class = o->arch_class ? o->arch_class : 2u;
-  flash->cfg.forced_mode = o->forced_mode;
-  flash->cfg.ram_total = o->ram_total;
-  flash->cfg.key = o->key;
-  flash->cfg.suite_preferred = o->suite_preferred;
-  flash->cfg.bus_speed_hz = o->bus_speed_hz;
-  flash->cfg.allow_convergent = o->allow_convergent;
-  flash->cfg.dedup_enable = o->dedup_enable;
-  flash->cfg.cdc_enable = o->cdc_enable;
-  flash->cfg.zrp_enable = o->zrp_enable;
-  flash->cfg.dab_enable = o->dab_enable;
-  flash->cfg.default_uid = o->uid;
-  flash->cfg.default_gid = o->gid;
-  flash->cfg.default_file_perm =
-      o->file_perm ? o->file_perm : MFS_DEFAULT_FILE_MODE;
-  flash->cfg.default_dir_perm =
-      o->dir_perm ? o->dir_perm : MFS_DEFAULT_DIR_MODE;
+  /* Política común de mfs_embedded_opts → mfs_config (una sola definición). */
+  mfs_st st = mfs_embedded_bind(&flash->cfg, &flash->drv, &flash->geom, o);
+  if (st != MFS_OK)
+    return st;
 
   flash->ready = true;
   return MFS_OK;

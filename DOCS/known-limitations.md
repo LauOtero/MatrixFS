@@ -101,6 +101,26 @@ qué **no** está cubierto. Alineado con §26 (lenguaje acotado) y §29.
 
 ## Almacenamiento flash y RTOS
 
+- **Presupuesto de RAM real del núcleo (medido).** La documentación declara
+  presupuestos por modo de 720 B a 21,5 KB (`mfs_types.h`), pero el consumo
+  **estático** del núcleo es mucho mayor y se fija en compilación:
+  **≈198 KB de `.bss`** más **17 240 B de `mf_t`** en la configuración por
+  defecto de 32 bits (`MFS_L2P_SLOTS=4096`, `MFS_ZONE_MAX=128`). Con
+  `-DMFS_L2P_SLOTS=1024` baja a ≈162 KB, y con el perfil mínimo
+  (`-DMFS_ALLOW_8BIT_TARGET=1`) a **≈85 KB de `.bss` + 1 840 B de `mf_t`**.
+  El motivo es que el núcleo declara ~20 buffers `static` de `MFS_SCRATCH_MAX`
+  (4 KB cada uno en 32 bits) que **no se solapan** entre sí, además del mapa L2P
+  (32 KB) y la tabla de zonas.
+  Consecuencia: **`ram_total`/`MATRIXFS_RAM_BUDGET` no reserva memoria** — solo
+  alimenta al planificador de viabilidad (`mfs_select_mode`)—, de modo que un
+  usuario que declare 32 KB y elija un MCU de 64 KB descubre el problema en el
+  enlace. Dimensiona con `MFS_L2P_SLOTS`, `MFS_ZONE_MAX`, `MFS_SCRATCH_MAX`,
+  `MFS_MAX_FILES_OPEN` y `MFS_WAL_WINDOW_MAX`.
+- **La pila de la tarea también es grande.** Varias rutas declaran
+  `uint8_t buf[MFS_SCRATCH_MAX]` en la pila (`mfs_fs.c:312,1973,2222,2428`,
+  `crypto/mfs_suites.c:638,701`) y pueden anidarse: **≥ 16 KB de pila** en 32 bits
+  y **≥ 8 KB** en el perfil mínimo. Con el `configMINIMAL_STACK_SIZE` por defecto
+  de CubeMX (≈512 B) el desbordamiento es inmediato.
 - **Medios gestionados (SD/eMMC/UFS/USB/NVMe/SATA).** El adaptador L2
   (`platform/common/mfs_l2_managed.c`) presenta la API de sectores del SDK como
   driver de MatrixFS, con RMW alineado a sector y TRIM/UNMAP. **No incluye
@@ -115,16 +135,33 @@ qué **no** está cubierto. Alineado con §26 (lenguaje acotado) y §29.
 - **Tope de 4 GiB.** El driver L2 direcciona con 32 bits (véase «Límite de 4 GiB
   por medio»); las capacidades certificadas de las unidades gestionadas
   (2–8 TB) exigen el formato v2 de 64 bits (fases F2–F3 de `media-profiles.md`).
+- **Sectores no uniformes.** Varias familias de MCU (STM32F4: 16/64/128 KB;
+  STM32F1: 1/2 KB; STM32L0: 128 B) tienen sectores de tamaños distintos en el
+  mismo dispositivo, mientras que el núcleo exige **un único `erase_unit`**
+  (dimensiona SB B, el anillo de tokens y cada zona). Se resuelve **fuera del
+  núcleo** con la *ventana uniforme* de `platform/common/mfs_sectors.c`: se elige
+  el mayor tramo contiguo de sectores de igual tamaño, se agrupan los pequeños
+  hasta el mínimo de 1024 B que fuerza `mfs_hal.c`, y el backend borra el tramo
+  completo `[addr, addr+erase_unit)`. La parte no uniforme de la región
+  reservada **se descarta** y se reporta (`dropped_bytes`).
+- **Unidad de programación > 1 byte.** La flash interna de un STM32 programa de
+  2, 4, 8 o 16 bytes y, en las familias con ECC (L4/L5/G0/G4/WB/WL/H5/H7/U5), no
+  se puede **reprogramar** una double/quadword. La capa compartida ahora permite
+  declarar la granularidad real (`mfs_embedded_flash_t.program_granularity`) y el
+  backend aplica un RMW que solo acepta la operación si la unidad está virgen o
+  si el dato pedido ya está contenido; en otro caso devuelve `MFS_EIO` en vez de
+  corromper.
 - **Puerto RTOS.** El núcleo trae adaptadores nativos de **FreeRTOS, Zephyr y
   ThreadX** compilados **solo en el target del RTOS**; en este entorno no se
-  compilan (no hay toolchain del RTOS) y por tanto **no se han verificado en
-  silicio**. Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y PX5 se **detectan** y se
-  resuelven con la plantilla `platform/rtos/mfs_rtos_port_template.c`. En host se
-  verifica la detección, el registro y el contrato §20.2 con un adaptador de
-  prueba (`tests/test_rtos.c`).
+  compilan (no hay toolchain del RTOS). Mbed OS, NuttX, RIOT, Mynewt, RT-Thread y
+  PX5 se **detectan** y se resuelven con la plantilla
+  `platform/rtos/mfs_rtos_port_template.c`. En host se verifica la detección, el
+  registro y el contrato §20.2 con un adaptador de prueba (`tests/test_rtos.c`).
 - **SDKs de fabricantes.** Silicon Labs, TI, Infineon y Renesas se integran a
   través de sus drivers de flash (capa `mfs_embedded` / `mfs_l2_managed`) y de su
   RTOS (puerto RTOS); no se incluyen proyectos de ejemplo compilados con cada SDK.
+  **ESP-IDF y STM32Cube sí tienen port propio** en `platform/esp-idf/` y
+  `platform/stm32cube/`, con guía de integración, build y verificación en host.
 
 ## No cubierto en esta edición
 

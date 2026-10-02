@@ -48,11 +48,16 @@ typedef enum {
 #define MFS_HWACCEL_SIMD 0x0100u /* vectorización (NEON/AVX/SSE) */
 #define MFS_HWACCEL_ATOMICS                                                    \
   0x0200u /* CAS/CMPXCHG atómicos (§13 RT)             */
+#define MFS_HWACCEL_DSP                                                        \
+  0x0400u /* DSP/SIMD32 (Cortex-M4/M7/M33, __ARM_FEATURE_DSP) */
+#define MFS_HWACCEL_MVE                                                        \
+  0x0800u /* MVE/Helium (Cortex-M55/M85, __ARM_FEATURE_MVE)   */
 
 /* Foto de la arquitectura y sus capacidades, producida por mfs_arch_detect() */
 typedef struct {
   uint8_t arch_class; /* mfs_arch_class_t (0..3)     */
   uint8_t bits;       /* 8 | 16 | 32 | 64            */
+  uint8_t cores;      /* núcleos de CPU (>=1)        */
   uint16_t hwaccel;   /* MFS_HWACCEL_* detectados    */
   uint32_t ram_total;
   uint32_t flash_size;
@@ -214,8 +219,16 @@ static inline bool mfs_mode_classic_ge(mfs_mode_t m, mfs_mode_t base) {
 
 /* Ventana de zonas ZLF direccionables en RAM (§8.1): ppage = (zona<<16)|idx.
  * Cota del objetivo embebido; en builds de host la geometría se deriva del
- * tamaño del medio sin superar este número de zonas. */
+ * tamaño del medio sin superar este número de zonas.
+ *
+ * Es un valor de COMPROMISO RAM↔capacidad: la tabla de zonas vive dentro de
+ * mf_t y esta cota dimensiona también el volumen direccionable útil
+ * (≈ MFS_ZONE_MAX × erase_unit). Se puede ajustar por build con
+ * -DMFS_ZONE_MAX=N sin editar el núcleo (los ports lo exponen por Kconfig o
+ * por configuración del BSP). */
+#ifndef MFS_ZONE_MAX
 #define MFS_ZONE_MAX 128u
+#endif
 
 /* Límites por modo (§18.2). Índices = mfs_mode_t */
 typedef struct {

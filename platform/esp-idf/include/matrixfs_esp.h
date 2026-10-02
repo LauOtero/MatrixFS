@@ -18,7 +18,8 @@
  * con el SDK de ESP-IDF:
  *   - aporta las primitivas obligatorias del puerto (mfs_port_*, ver el .c);
  *   - traduce los callbacks read/prog/erase a la API esp_partition;
- *   - monta/formatea el volumen usando la capa embebida compartida.
+ *   - monta/formatea el volumen usando la capa embebida compartida;
+ *   - opcionalmente lo registra en el VFS (matrixfs_esp_vfs.c).
  *
  * La instancia del nucleo (`mf_t`) es OPACA en include/matrixfs: para declarar
  * una instancia incluye "mfs_internal.h" (directorio src/) tal y como hace
@@ -27,9 +28,18 @@
  * NOTA: el nucleo de MatrixFS es de instancia unica (tablas estaticas, sin
  * heap). Este componente aloja el descriptor de flash en estado estatico, por
  * lo que solo puede haber un volumen MatrixFS montado a la vez.
+ *
+ * CONCURRENCIA. El nucleo NO es reentrante. Con CONFIG_MATRIXFS_THREAD_SAFE
+ * (por defecto) el componente serializa el montaje/formateo y la capa VFS, pero
+ * las llamadas DIRECTAS al nucleo (mf_open/mf_read/mf_write/...) no pasan por
+ * aqui: si el volumen se usa desde mas de una tarea, la aplicacion debe
+ * agruparlas con matrixfs_esp_lock()/matrixfs_esp_unlock(). Ver README.
  */
 #ifndef MATRIXFS_ESP_H
 #define MATRIXFS_ESP_H
+
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "matrixfs/matrixfs.h"
 #include "mfs_embedded.h"
@@ -70,9 +80,33 @@ mfs_st matrixfs_esp_format(const char *partition_label, mf_t *fs,
 mfs_st matrixfs_esp_mount_default(mf_t *out_fs);
 
 /* Ultimo mensaje de error legible del componente (nunca NULL). Valido hasta la
- * siguiente llamada al componente desde la misma tarea; no es thread-safe.
+ * siguiente llamada al componente desde la misma tarea. Con el mutex activo, el
+ * buffer es por tarea; sin el, no es thread-safe.
  */
 const char *matrixfs_esp_last_error(void);
+
+/* ==== Diagnostico de capacidad ==== */
+
+/* Capacidad util REAL del volumen montado, en bytes. No es el tamano de la
+ * particion: el nucleo direcciona como maximo MFS_ZONE_MAX zonas de
+ * `erase_unit` bytes, de modo que una particion mayor NO se aprovecha entera.
+ * Devuelve 0 si no hay volumen preparado. */
+uint32_t matrixfs_esp_capacity_bytes(void);
+
+/* Devuelve true si la particion es mayor que la capacidad util y por tanto hay
+ * espacio que no se aprovechara (el montaje lo avisa por ESP_LOGW). */
+bool matrixfs_esp_capacity_wasteful(void);
+
+/* ==== Serializacion (CONFIG_MATRIXFS_THREAD_SAFE) ==== */
+
+/* Toma/suelta el mutex recursivo del componente. Necesario para agrupar varias
+ * llamadas DIRECTAS al nucleo (p. ej. mf_stat + mf_open) cuando el volumen se
+ * usa desde mas de una tarea. Son recursivos: se pueden anidar.
+ *
+ * Sin CONFIG_MATRIXFS_THREAD_SAFE son no-op: la aplicacion es responsable de
+ * la exclusion mutua. */
+void matrixfs_esp_lock(void);
+void matrixfs_esp_unlock(void);
 
 #ifdef __cplusplus
 }

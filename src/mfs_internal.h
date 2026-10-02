@@ -65,9 +65,16 @@ static inline uint32_t mfs_zone_base(const mfs_hwv_t *h) {
  * (MFS_ALLOW_8BIT_TARGET ⇒ MFS_IS_8BIT_TARGET) usa pools y scratch mínimos
  * para caber en el presupuesto de RAM (§18.2, modo 8-bit ≤ 2 KB), a costa de
  * un volumen/ventana más pequeños. El build de 16/32 bits mantiene los valores
- * normativos completos. */
+ * normativos completos.
+ *
+ * Los tres límites que más RAM consumen (ficheros abiertos, ventana WAL y
+ * scratch de página) son SOBRESCRIBIBLES en compilación: si el integrador los
+ * define (p. ej. `-DMFS_SCRATCH_MAX=1024`), se respeta su valor. Así una
+ * plataforma con SRAM escasa (ESP-IDF, STM32) puede recortar el `.bss`. */
 #if MFS_IS_8BIT_TARGET
+#ifndef MFS_MAX_FILES_OPEN
 #define MFS_MAX_FILES_OPEN 2u /* ficheros simultáneos   */
+#endif
 #define MFS_MAX_SNAPS 2u      /* snapshots O(1)         */
 #define MFS_MAX_IOCB 2u       /* ring iocb              */
 #define MFS_MAX_ZONES 16u     /* tabla de zonas en RAM  */
@@ -75,16 +82,22 @@ static inline uint32_t mfs_zone_base(const mfs_hwv_t *h) {
 #define MFS_DIR_DEPTH 3u
 #define MFS_NAME_MAX 16u
 #define MFS_PATH_MAX 48u
+#ifndef MFS_WAL_WINDOW_MAX
 #define MFS_WAL_WINDOW_MAX 16u /* §25 W: mínimo del rango 32..256 */
+#endif
 #define MFS_SAVEPOINT_DEPTH 1u /* §9.6                   */
 #define MFS_GL_DLIST_MAX 4u    /* AGCB+ dirty-list §25   */
 #define MFS_CUSUM_RING 4u
 /* Scratch de una página lógica: cubre el mayor chunk 8-bit (256 B). */
+#ifndef MFS_SCRATCH_MAX
 #define MFS_SCRATCH_MAX MFS_CHUNK_8BIT_COMPACT
+#endif
 /* Ventana de inodos residentes (ficheros abiertos + directorios en curso) */
 #define MFS_INODE_WINDOW 4u
 #else
+#ifndef MFS_MAX_FILES_OPEN
 #define MFS_MAX_FILES_OPEN 32u     /* Extended (§18.2)      */
+#endif
 #define MFS_MAX_SNAPS 64u          /* Extended              */
 #define MFS_MAX_IOCB 16u           /* ring iocb Extended    */
 #define MFS_MAX_ZONES MFS_ZONE_MAX /* tabla de zonas en RAM (§8.1) */
@@ -92,11 +105,15 @@ static inline uint32_t mfs_zone_base(const mfs_hwv_t *h) {
 #define MFS_DIR_DEPTH 8u
 #define MFS_NAME_MAX 64u
 #define MFS_PATH_MAX 256u
+#ifndef MFS_WAL_WINDOW_MAX
 #define MFS_WAL_WINDOW_MAX 256u /* §25 W rango 32..256   */
+#endif
 #define MFS_SAVEPOINT_DEPTH 4u  /* §9.6                  */
 #define MFS_GL_DLIST_MAX 32u    /* AGCB+ dirty-list §25  */
 #define MFS_CUSUM_RING 16u
+#ifndef MFS_SCRATCH_MAX
 #define MFS_SCRATCH_MAX MFS_CHUNK_EXTENDED
+#endif
 #define MFS_INODE_WINDOW (MFS_MAX_FILES_OPEN + 16u)
 #endif
 
